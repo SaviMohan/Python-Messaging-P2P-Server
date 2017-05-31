@@ -87,7 +87,7 @@ class MainApp(object):
         
 	def authoriseUserLogin(self, username, password):
 		
-		request = urllib2.Request('http://lscs302.pythonanywhere.com/report?username=smoh944&password=2cc4ba400f5105057f065f06ae9d758eb4388783038d738d6684666cb4297751&location=0&ip=10.104.131.211&port=10001&enc=0')	
+		request = urllib2.Request('http://cs302.pythonanywhere.com/report?username=smoh944&password=2cc4ba400f5105057f065f06ae9d758eb4388783038d738d6684666cb4297751&location=0&ip=10.104.131.211&port=10001&enc=0')	
 		response = urllib2.urlopen(request)
 		data = response.read()
 		print data
