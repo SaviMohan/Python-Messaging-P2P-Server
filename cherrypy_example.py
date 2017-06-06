@@ -11,7 +11,7 @@
 #            Python  (We use 2.7)
 
 # The address we listen for connections on
-listen_ip = "0.0.0.0"
+listen_ip = "127.0.0.1"
 listen_port = 10001
 SALT = "COMPSYS302-2017"
 DB_USER_DATA = "relationalDatabase.db"
@@ -27,6 +27,8 @@ import time
 import os #used to figure out what operating system this is running on
 import webbrowser
 import socket
+from cherrypy.process.plugins import Monitor
+import thread
 
 class MainApp(object):
 			
@@ -39,22 +41,90 @@ class MainApp(object):
 			return '2'	#Rest of World
 	
 	def getIP(self):
-		internalIP = socket.gethostbyname(socket.getfqdn())	#internal ip address	
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		s.connect(("8.8.8.8",80))
+		internalIP = s.getsockname()[0]
+		s.close()
+		#socket.gethostbyname(socket.gethostname())	#internal ip address	
 		externalIP = (urllib2.urlopen(urllib2.Request('http://ident.me'))).read().decode('utf8') #retrieves external ip	#encrypt?
 		print internalIP
 		print externalIP
 		location = self.getLocation(internalIP)
-		if ((location == '0')or(location == '1')):
+		if((location == '0')or(location == '1')):
 			return str(internalIP)
 		else:
 			return str(externalIP)
 	
 	
+	def createClientProfilesTable():
+		conn = sqlite3.connect(DB_USER_DATA)
+		
+		# Database will have UTF-8 encoding
+		#conn.text_factory = str
+		
+		# Once we have a Connection, we can create a Cursor object and call its execute() method to perform SQL commands
+		c = conn.cursor()
+		
+		c.execute('''CREATE TABLE IF NOT EXISTS ClientProfiles (id INTEGER PRIMARY KEY, profile_username TEXT, fullname TEXT, position TEXT, description TEXT, location TEXT, picture TEXT, encoding TEXT, encryption TEXT, decryptionKey TEXT)''')
+		
+		conn.commit()
+		conn.close()
+	
+	def populateClientProfilesTable():
+		serverUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/listUsers')
+		serverUsersResponse = urllib2.urlopen(serverUsersRequest)
+		serverUsersData = serverUsersResponse.read()
+		serversUsersList = serverUsersData.split(',')
+		
+		conn = sqlite3.connect(DB_USER_DATA)
+		c = conn.cursor()
+		for UPI in serversUsersList:		
+			c.execute("INSERT INTO ClientProfiles (profile_username,picture) SELECT ?,'https://pixabay.com/p-973460/?no_redirect' WHERE NOT EXISTS (SELECT * FROM ClientProfiles WHERE profile_username = ?)", (UPI,UPI))
+		
+		conn.commit() # commit actions to the database
+		conn.close()
+	
+	def getClientProfile(self,profile_username='smoh944'):
+		conn = sqlite3.connect(DB_USER_DATA)
+		c = conn.cursor()
+		c.execute('''SELECT * FROM ClientProfiles WHERE profile_username = ?''', (profile_username,))
+		profileData = c.fetchone()
+		conn.close()
+		print profileData
+		return profileData
+	
+	@cherrypy.expose######################
+	def updateClientProfileDetails(self, fullname=None, position=None, description=None, location=None, picture=None):
+		""" """
+		username = cherrypy.session['username']
+		conn = sqlite3.connect(DB_USER_DATA)
+		c = conn.cursor()
+		
+		if not((fullname == "")or(fullname==None)):
+			c.execute('''UPDATE ClientProfiles SET fullname = ? WHERE profile_username = ?''',(fullname, username))	
+		if not((position == "")or(position==None)):
+			c.execute('''UPDATE ClientProfiles SET position = ? WHERE profile_username = ?''',(position, username))	
+		if not((description == "")or(description==None)):
+			c.execute('''UPDATE ClientProfiles SET description = ? WHERE profile_username = ?''',(description, username))	
+		if not((location == "")or(location==None)):
+			c.execute('''UPDATE ClientProfiles SET location = ? WHERE profile_username = ?''',(location, username))	
+		if not((picture == "")or(picture==None)):
+			c.execute('''UPDATE ClientProfiles SET picture = ? WHERE profile_username = ?''',(picture, username))	
+		
+		conn.commit()
+		conn.close()
+		#error = self.authoriseUserLogin(username,password)
+		#if (error == 0):
+		#    cherrypy.session['username'] = username;
+		raise cherrypy.HTTPRedirect('/')
+		#else:
+		#    raise cherrypy.HTTPRedirect('/login')
+	
 	def createMessagesTable():
 		conn = sqlite3.connect(DB_USER_DATA)
 		
 		# Database will have UTF-8 encoding
-		conn.text_factory = str
+		#conn.text_factory = str
 		
 		# Once we have a Connection, we can create a Cursor object and call its execute() method to perform SQL commands
 		c = conn.cursor()
@@ -69,12 +139,12 @@ class MainApp(object):
 		conn = sqlite3.connect(DB_USER_DATA)
 		
 		# Database will have UTF-8 encoding
-		conn.text_factory = str
+		#conn.text_factory = str
 		
 		# Once we have a Connection, we can create a Cursor object and call its execute() method to perform SQL commands
 		c = conn.cursor()
 		
-		c.execute('''CREATE TABLE IF NOT EXISTS AllUsers (id INTEGER PRIMARY KEY, username TEXT, ip TEXT, location TEXT, lastLogin TEXT, port TEXT, status TEXT)''')
+		c.execute('''CREATE TABLE IF NOT EXISTS AllUsers (id INTEGER PRIMARY KEY, username TEXT, ip TEXT, location TEXT, lastLogin TEXT, port TEXT, status TEXT, publicKey TEXT)''')
 		
 		conn.commit()
 		conn.close()
@@ -97,12 +167,18 @@ class MainApp(object):
 
 		
 	def updateAllUsersTable(self, onlineUsersData):
+		onlineUsersData = json.loads(onlineUsersData)
+		
 		conn = sqlite3.connect(DB_USER_DATA)
 		c = conn.cursor()
+		c.execute("UPDATE AllUsers SET status = 'offline'")
+		for value in onlineUsersData.itervalues():
 		
-		
-		c.execute('''UPDATE AllUsers SET ip = ? , location = ?, lastLogin = ?, port = ? WHERE username = ?''', ('1', '1', '1', '1', 'smoh944'))
-		
+			c.execute('''UPDATE AllUsers SET ip = ? , location = ?, lastLogin = ?, port = ?, status = 'online' WHERE username = ?''', (value['ip'], value['location'], value['lastLogin'], value['port'], value['username']))
+			try:
+				c.execute('''UPDATE AllUsers SET publicKey = ? WHERE username = ?''',(value['publicKey'], value['username']))
+			except:
+				pass
 		conn.commit() # commit actions to the database
 		conn.close()
 		
@@ -115,11 +191,12 @@ class MainApp(object):
 	createAllUsersTable()
 	createMessagesTable()
 	populateAllUsersTable()
+	createClientProfilesTable()
+	populateClientProfilesTable()
+	lock = thread.allocate_lock()
+	#IP = getIP()	
 	
-
-		
-	
-	webbrowser.open_new('http://%s:%d/' % ('localhost', listen_port)) # Opens web browser
+	webbrowser.open_new('http://%s:%d/' % (listen_ip, listen_port)) # Opens web browser
 	
     #CherryPy Configuration
 	_cp_config = {'tools.encode.on': True, 
@@ -144,7 +221,8 @@ class MainApp(object):
 			Page += "Hello " + cherrypy.session['username'] + "!<br/>"
 			Page += "Here is some bonus text because you've logged in!"
 			
-
+			Page += "Click here to <a href='editProfile'>Edit Profile</a>."
+			
 			Page += '<form action="/viewOnlineUsers" method="post" enctype="multipart/form-data">'
 			Page += '<input type="submit" value="List of online users"/></form>'
 		except KeyError: #There is no username
@@ -159,34 +237,47 @@ class MainApp(object):
         
 	@cherrypy.expose
 	def login(self):
-		Page = '<form action="/signin" method="post" enctype="multipart/form-data">'
-		Page += 'Username: <input type="text" name="username"/><br/>'
-		Page += 'Password: <input type="password" name="password"/>'
-		Page += '<input type="submit" value="Login"/></form>'
-		return Page
+		return open('login.html')
+		
+	@cherrypy.expose
+	def editProfile(self):#########################
+		return open('editProfile.html')	
     
 	@cherrypy.expose
 	def ping(self, sender=None):
 		return '0'
 	
 	@cherrypy.expose
-	def getProfile(self, profile_username):
-		pass
+	@cherrypy.tools.json_in()
+	def getProfile(self):
+		input = cherrypy.request.json
+		profileData = self.getClientProfile(input['profile_username'])
+		outputDict = {'fullname':profileData[2],'position':profileData[3],'description':profileData[4], 'location':profileData[5], 'picture':profileData[6], 'encoding':profileData[7], 'encryption':profileData[8], 'decryptionKey': profileData[9]}
+		return json.dumps(outputDict) #data is a JSON object
+
 	
 	@cherrypy.expose
 	@cherrypy.tools.json_in()
-	def receiveFile(self):
+	def receiveFile(self, encoding = 0):
 		try:
 			input_data = cherrypy.request.json
-			print input_data
+			print input_data['sender']
 			return ('0: Success')
 		except:
 			return ('Error: Something went wrong')
 		
+	@cherrypy.expose
+	def sendFile(self, sender='smoh944', destination='myep112', file='Hello This is a Test',ip='172.23.29.8',port='10001',content_type='text',filename='test.txt',encoding='0',encryption='0', hashing = '0', hashedFile = '', decryptionKey='0'):
+		output_dict = {'sender':sender,'destination':destination,'file':file, 'stamp':float(time.time()), 'filename':filename,'content_type':content_type, 'encryption':encryption, 'hashing':hashing, 'hash': hashedFile, 'decryptionKey':decryptionKey}
+		data = json.dumps(output_dict) #data is a JSON object
+		request = urllib2.Request('http://'+ ip + ':' + port + '/receiveFile' , data, {'Content-Type':'application/json'})
+		response = urllib2.urlopen(request)
+		print response.read()
 	
 	@cherrypy.expose
 	def viewOnlineUsers(self):
 		""" """
+		#self.authoriseUserLogin()
 		try:
 			Page = 'Users: '+cherrypy.session['onlineUsersData']+'<br/>'	
 		except KeyError: #There is no online user list
@@ -194,26 +285,33 @@ class MainApp(object):
 		    
 		
 		return Page
-		
+	
+	
         
 	# LOGGING IN AND OUT
 	@cherrypy.expose
 	def signin(self, username=None, password=None):
 		"""Check their name and password and send them either to the main page, or back to the 			main login screen."""
-		
-		error = self.authoriseUserLogin(username,password)
+		hashOfPasswordPlusSalt = None
+		if(not(password==None)):
+			passwordPlusSalt = password + SALT
+			hashOfPasswordPlusSalt = hashlib.sha256(passwordPlusSalt).hexdigest()
+		error = self.authoriseUserLogin(username,hashOfPasswordPlusSalt)
 		if (error == 0):
-		    cherrypy.session['username'] = username;
-		    raise cherrypy.HTTPRedirect('/')
+			cherrypy.session['username'] = username;
+			cherrypy.session['hashedPassword'] = hashOfPasswordPlusSalt;
+			self.sendMessage()
+			self.serverReportThreading(cherrypy.session['username'],cherrypy.session['hashedPassword'])
+			raise cherrypy.HTTPRedirect('/')
 		else:
-		    raise cherrypy.HTTPRedirect('/login')
+			raise cherrypy.HTTPRedirect('/login')
 
 	@cherrypy.expose
 	def signout(self):
 		"""Logs the current user out, expires their session"""
 		username = cherrypy.session.get('username')
 		if (username == None):
-		    pass
+			pass
 		else:		    
 			#url = 'https://cs302.pythonanywhere.com/logoff?username=' + cherrypy.session['username'] + '&password=' + cherrypy.session['hashedPassword'] + '&enc=0'
 			logoutRequest = urllib2.Request('https://cs302.pythonanywhere.com/logoff?username=' + cherrypy.session['username'] + '&password=' + cherrypy.session['hashedPassword'] + '&enc=0')
@@ -223,39 +321,63 @@ class MainApp(object):
 			cherrypy.lib.sessions.expire()
 		raise cherrypy.HTTPRedirect('/')
         
-	def authoriseUserLogin(self, username=None, password=None):
-		passwordPlusSalt = password + SALT
-		hashOfPasswordPlusSalt = hashlib.sha256(passwordPlusSalt).hexdigest()
-		print hashOfPasswordPlusSalt
+	def serverReportThreading(self,username,hashedPassword):
+		thread.start_new_thread(self.serverReportTimer, (username,hashedPassword))
+
+	def serverReportTimer(self,username,hashedPassword):
+		beginTime=time.time()
+		while True:
+			time.sleep(30.0-((time.time()-beginTime)%30.0))#how many secs there are to the nearest 50 sec block of time, 50 minus that to figure out how long you have to sleep, the reason I do this is to account for variable execution times for self.authoriseUserLogin()
+			self.authoriseUserLogin(username,hashedPassword)
+	
+	def authoriseUserLogin(self, username=None, hashedPassword=None):
+		#if(not(password==None)):
+			#passwordPlusSalt = password + SALT
+			#hashOfPasswordPlusSalt = hashlib.sha256(passwordPlusSalt).hexdigest()
+			#print hashOfPasswordPlusSalt
 
 		#2cc4ba400f5105057f065f06ae9d758eb4388783038d738d6684666cb4297751
 		#smoh944
 		ip = self.getIP()
 		location = self.getLocation(ip)
-		
-		loginRequest = urllib2.Request('http://cs302.pythonanywhere.com/report?username='+username+'&password='+hashOfPasswordPlusSalt+'&location='+location+'&ip='+ip+'&port='+str(listen_port)+'&enc=0')	#Object which represents the HTTP request we are making
+		if ((username==None)or(hashedPassword==None)):
+			try:
+				
+				username = cherrypy.session['username']
+				print 'bbbbbbb!!!!!!!!!!'
+				hashOfPasswordPlusSalt = cherrypy.session['hashedPassword']
+				print 'assdasdsd!!!!!!!!!!'
+			except:
+				print 'testing!!!!!!!!!!'
+				return
+			#print 'testing!!!!!!!!!!'
+		loginRequest = urllib2.Request('http://cs302.pythonanywhere.com/report?username='+username+'&password='+hashedPassword+'&location='+location+'&ip='+ip+'&port='+str(listen_port)+'&enc=0')	#Object which represents the HTTP request we are making
 		#loginRequest = urllib2.Request('http://cs302.pythonanywhere.com/report?username='+username+'&password='+hashOfPasswordPlusSalt+'&location=2&ip=118.92.154.45&port=10001&enc=0')
 		loginResponse = urllib2.urlopen(loginRequest)#Returns a response object for the requested URL
 		loginData = loginResponse.read() #The response is a file-like object, so .read() can be called on it
 		
 		#print loginData
-		print username
+		print loginData
 		#print cherrypy.session.id
 		#print password
 		
+		if(not(hashedPassword==None)):
+			onlineUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/getList?username='+username+'&password='+hashedPassword+'&enc=0&json=1')
+			onlineUsersResponse = urllib2.urlopen(onlineUsersRequest)
+			onlineUsersData = onlineUsersResponse.read()
+			self.lock.acquire()
+			self.updateAllUsersTable(onlineUsersData)
+			self.lock.release()
 		
-		onlineUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/getList?username='+username+'&password='+hashOfPasswordPlusSalt+'&enc=0&json=1')
-		onlineUsersResponse = urllib2.urlopen(onlineUsersRequest)
-		onlineUsersData = onlineUsersResponse.read()
-		
-		print onlineUsersData
-		cherrypy.session['onlineUsersData'] = onlineUsersData;
+		#print onlineUsersData
+			#cherrypy.session['onlineUsersData'] = onlineUsersData;
 		#self.setupDatabase()
 		#self.populateAllUsersTable()
-		self.updateAllUsersTable([])
+		self.getClientProfile()
 		#self.sendMessage()
+		#self.sendFile()
 		if (loginData[0] == "0") :
-			cherrypy.session['hashedPassword'] = hashOfPasswordPlusSalt;
+			
 			return 0
 		else:
 		    return 1
@@ -271,10 +393,10 @@ class MainApp(object):
 			return ('Error: Something went wrong')
 		
 	@cherrypy.expose
-	def sendMessage(self, sender='smoh944', destination='ssit662', message='Hello This is a Test',ip='125.238.255.122',port='10008',markdown='0',encoding='0',encryption='0', hashing = '0', hashedMessage = '', decryptionKey='0'):
+	def sendMessage(self, sender='smoh944', destination='sbec582', message='Hello This is a Test',ip='172.23.99.199',port='10003',markdown='0',encoding='0',encryption='0', hashing = '0', hashedMessage = '', decryptionKey='0'):
 		output_dict = {'sender':sender,'destination':destination,'message':message, 'stamp':float(time.time()), 'markdown':markdown, 'encryption':encryption, 'hashing':hashing, 'hash': hashedMessage, 'decryptionKey':decryptionKey}
 		data = json.dumps(output_dict) #data is a JSON object
-		request = urllib2.Request('http://'+ ip + ':' + port + '/receiveMessage?encoding=' + encoding, data, {'Content-Type':'application/json'})
+		request = urllib2.Request('http://'+ ip + ':' + port + '/receiveMessage', data, {'Content-Type':'application/json'})
 		response = urllib2.urlopen(request)
 		print response.read()
 
@@ -313,7 +435,7 @@ def runMainApp():
 
 	# Start the web server
 	cherrypy.engine.start()
-
+	
 	# And stop doing anything else. Let the web server take over.
 	cherrypy.engine.block()
  
