@@ -1,0 +1,56 @@
+#outer {
+  width: 100%;
+  text-align: center;
+}
+.inner {
+  display: inline-block;
+}
+.msgBtn {
+  font-size: 30px;
+  border-radius: 10px;
+  background-color: white;
+  color: black;
+  border: 2px solid #4CAF50; /* Green */
+}
+.msgBtn:hover {
+  background-color: #4CAF50; /* Green */
+  color: white;
+}
+
+.msgBtn2 {
+  font-size: 30px;
+  
+  background-color: white;
+  color: black;
+  border: 2px solid #4CAF50; /* Green */
+  width:1300px;
+  height:200px;
+}
+.msgBtn2:hover {
+  background-color: #4CAF50; /* Green */
+  color: white;
+}
+
+body {
+  background-color: #35465c;
+}
+
+.ui {
+  margin: 10px auto;
+  width: 1300px;
+  height: 900px;
+  background-color: #fdf;
+  border-radius: 3px;
+
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: row;
+  flex-direction: row;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  overflow: hidden;
+}
+.ui .userList {
+  overflow-y: auto;
+}

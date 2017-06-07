@@ -1,7 +1,29 @@
-<html>
-    <head></head>
-    <body>
-        <form action="/updateClientProfileDetails" method="post" enctype="multipart/form-data">
+<!DOCTYPE html>
+<html >
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Profile</title>
+  
+  
+  
+      <link rel="stylesheet" href="css/editProfileStyle.css">
+
+  
+</head>
+
+<body>
+  <div id="outer">
+  <div class="inner"><button type="submit" class="msgBtn" onClick="return false;" >View Users</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onClick="return false;">View My Profile</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewOnlineUsers'">Edit My Profile</button></div>
+  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/viewOnlineUsers'">Log Out</button></div>
+</div>
+<h1 style="text-align:center">EDIT MY PROFILE</h1>
+<div class="ui">
+
+
+
+<form action="/updateClientProfileDetails" method="post" enctype="multipart/form-data">
 			Full Name: <input type="text" name="fullname"/><br/>
 			Position: <input type="text" name="position"/><br/>
 			Description: <input type="text" name="description"/><br/>
@@ -9,6 +31,9 @@
 			Picture: <input type="text" name="picture"/>
 			<input type="submit" value="Save Changes"/>
 		</form>
-			
-     </body>
+  
+</div>
+  
+  
+</body>
 </html>
