@@ -30,14 +30,15 @@
       <div class="info">
         
        
-        <pre class="name">smoh944    Last Login:</pre>
+        <pre class="name">{userDetails:}</pre>
     
         
       </div>
       
     </div>
     <ul class="messages">
-      <li class="i">
+      {userMessages:}
+	  <li class="i">
         <div class="head">
           <span class="time">10:13 AM, Today</span>
           <span class="name">You</span>
@@ -88,14 +89,18 @@
       </li>
     </ul>
     <div class="write-form">
-		<form accept-charset="utf-8" action="/viewOnlineUsers" method="post" enctype="multipart/form-data">
-			  
-			   <input type="text" name="messageBox"/>
+		<form accept-charset="utf-8" action="/sendMessage" method="post" enctype="multipart/form-data">
+				<input name = "destination" value="{receiverUsername:}" type="hidden">
+				<input name = "sender" value="{senderUsername:}" type="hidden">
+				
+				<input type="text" name="message"/>
 			  <input type="submit" value="Send Message"/>
 		  </form>
       <form accept-charset="utf-8" action = "/sendFile" method="post" enctype="multipart/form-data" style="float:left;">
-        <input type = "file" name = "file"/>
+        <input type = "file" name = "outFile"/>
         <input name = "destination" value="{receiverUsername:}" type="hidden">
+		<input name = "sender" value="{senderUsername:}" type="hidden">
+		
         <button class="msgBtn" type="submit">Send File</button>
         
       </form> 
