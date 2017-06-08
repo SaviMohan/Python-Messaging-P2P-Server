@@ -5,6 +5,11 @@
 .inner {
   display: inline-block;
 }
+
+h1 {
+    color: white;
+	
+}
 .msgBtn {
   font-size: 30px;
   border-radius: 10px;
@@ -23,10 +28,24 @@
   background-color: white;
   color: black;
   border: 2px solid #4CAF50; /* Green */
-  width:1300px;
-  height:200px;
+  width:800px;
+  height:100px;
 }
 .msgBtn2:hover {
+  background-color: #4CAF50; /* Green */
+  color: white;
+}
+
+.msgBtn3 {
+  font-size: 30px;
+  
+  background-color: white;
+  color: black;
+  border: 2px solid #4CAF50; /* Green */
+  width:470px;
+  height:100px;
+}
+.msgBtn3:hover {
   background-color: #4CAF50; /* Green */
   color: white;
 }

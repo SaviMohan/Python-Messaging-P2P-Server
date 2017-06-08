@@ -55,7 +55,7 @@ class MainApp(object):
 		location = self.getLocation(internalIP)
 		print location
 		if((location == '0')or(location == '1')):
-			print 'testing!!!!!!!!'
+			#print 'testing!!!!!!!!'
 			return str(internalIP)
 		else:
 			return str(externalIP)
@@ -217,10 +217,10 @@ class MainApp(object):
 		
 		conn = sqlite3.connect(DB_USER_DATA)
 		c = conn.cursor()
-		c.execute("UPDATE AllUsers SET status = 'offline'")
+		c.execute("UPDATE AllUsers SET status = 'Logged Off'")
 		for value in onlineUsersData.itervalues():
 		
-			c.execute('''UPDATE AllUsers SET ip = ? , location = ?, lastLogin = ?, port = ?, status = 'online' WHERE username = ?''', (value['ip'], value['location'], value['lastLogin'], value['port'], value['username']))
+			c.execute('''UPDATE AllUsers SET ip = ? , location = ?, lastLogin = ?, port = ?, status = 'Logged On' WHERE username = ?''', (value['ip'], value['location'], value['lastLogin'], value['port'], value['username']))
 			try:
 				c.execute('''UPDATE AllUsers SET publicKey = ? WHERE username = ?''',(value['publicKey'], value['username']))
 			except:
@@ -228,8 +228,14 @@ class MainApp(object):
 		conn.commit() # commit actions to the database
 		conn.close()
 		
-	
-
+	def getAllUsersData(self):
+		conn = sqlite3.connect(DB_USER_DATA)
+		c = conn.cursor()
+		c.execute("SELECT * FROM AllUsers")
+		usersData = c.fetchall()
+		conn.commit()
+		conn.close()
+		return usersData
 	
 
 	
@@ -286,7 +292,7 @@ class MainApp(object):
 			Page = open('login.html').read().format(statusText = cherrypy.session['loginStatusText'])
 		except:
 			Page = open('login.html').read().format(statusText = 'Enter your Username and Password')	
-		#Page = open('index.html')
+		#Page = open('usersPage.html')
 		return Page
 	
 	@cherrypy.expose
@@ -295,9 +301,13 @@ class MainApp(object):
 			client = cherrypy.session['username']
 			destinationUserData = self.getUserData(destination)
 			messages = self.getMessages(client,destination)
-			lastLogin = (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(destinationUserData[4]))))
+			if (not(destinationUserData[4]==None)):
+				lastLogin = (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(destinationUserData[4]))))
+			else:
+				lastLogin = ''
 			destinationUserDetails = destination+'	'+'Last Login: '+lastLogin
-			userConversation = '<li class="i"> <div class="head"> <span class="time">10:13 AM, Today</span> <span class="name">You</span> </div> <div class="message">Initial</div>  </li>'
+			#userConversation = '<li class="i"> <div class="head"> <span class="time">10:13 AM, Today</span> <span class="name">You</span> </div> <div class="message">Initial</div>  </li>'
+			userConversation = ''
 			for message in messages:
 				if((client==message[1])and(destination==message[2])):#message sent by client
 					userConversation += ('<li class="i"> <div class="head"> <span class="time">'+(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(message[4]))))+'</span> <span class="name">You</span> </div> <div class="message">'+message[3]+'</div>  </li>')	
@@ -310,8 +320,18 @@ class MainApp(object):
 		
 		
 	@cherrypy.expose
-	def openUsersListPage(self,destination=None):
-		pass	
+	def openUsersListPage(self):
+		try:
+			client = cherrypy.session['username']	
+			usersData = self.getAllUsersData()
+			userDetails = ''
+			for user in usersData:
+				print user[1]
+				userDetails += ('''<div class="user"><button type="submit" class="msgBtn2" onclick="window.location.href='/openMessagingPage?destination='''+user[1]+''''">'''+user[1]+'''---'''+user[6]+'''</button><button type=submit class="msgBtn3" onclick="window.location.href='/viewOnlineUsers'">View Profile</button></div>''')	
+			Page = open('usersPage.html').read().format(userList = userDetails)
+			return Page
+		except:	
+			pass #redirect back to login page
 	
 	@cherrypy.expose
 	def viewProfilePage(self,username=None):
@@ -347,6 +367,8 @@ class MainApp(object):
 		try:
 			input_data = cherrypy.request.json
 			print input_data['sender']
+			if (((len(input_data['file'])*(3/4)))>5242880):
+				return ('4: File exceeds 5MB')
 			inputFile = (input_data['file']).decode('base64')
 			fileName = input_data['filename']#
 			
@@ -407,7 +429,10 @@ class MainApp(object):
 			
 			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], fileMessage, output_dict['stamp'], '0','true', fileName, content_type)
 		except:
-			print 'error!!!!!!!!'
+			print 'file send error'
+			if(sender==None)or(destination==None):
+				raise cherrypy.HTTPRedirect('/login')
+		raise cherrypy.HTTPRedirect('/openMessagingPage?destination='+destination)	
 		#redirect back to destination user page
 	#@cherrypy.expose
 	#def messageUserPage(self,destination = ''):
@@ -440,9 +465,10 @@ class MainApp(object):
 			cherrypy.session['username'] = username;
 			cherrypy.session['hashedPassword'] = hashOfPasswordPlusSalt;
 			#self.sendMessage()
+			self.openUsersListPage()
 			self.getMessages('smoh944', 'abha808')
 			self.serverReportThreading(cherrypy.session['username'],cherrypy.session['hashedPassword'])
-			raise cherrypy.HTTPRedirect('/')
+			raise cherrypy.HTTPRedirect('/openUsersListPage')
 		else:
 			cherrypy.session['loginStatusText'] = "Username or Password is Incorrect"
 			raise cherrypy.HTTPRedirect('/login')
@@ -460,7 +486,7 @@ class MainApp(object):
 			logoutData = logoutResponse.read()
 			print logoutData
 			cherrypy.lib.sessions.expire()
-		raise cherrypy.HTTPRedirect('/')
+		raise cherrypy.HTTPRedirect('/login')
         
 	def serverReportThreading(self,username,hashedPassword):
 		thread.start_new_thread(self.serverReportTimer, (username,hashedPassword))
@@ -469,7 +495,10 @@ class MainApp(object):
 		beginTime=time.time()
 		while True:
 			time.sleep(30.0-((time.time()-beginTime)%30.0))#how many secs there are to the nearest 50 sec block of time, 50 minus that to figure out how long you have to sleep, the reason I do this is to account for variable execution times for self.authoriseUserLogin()
-			self.authoriseUserLogin(username,hashedPassword)
+			try:
+				self.authoriseUserLogin(username,hashedPassword)
+			except:
+				pass	
 	
 	def authoriseUserLogin(self, username=None, hashedPassword=None):
 		#if(not(password==None)):
@@ -552,7 +581,7 @@ class MainApp(object):
 	def sendMessage(self, sender='smoh944', destination='abha808', message='Hello This is a Test2',ip='10.103.137.62',port='10001',markdown='1',encryption='0', hashing = '0', hashedMessage = None, decryptionKey=None):	
 		try:	
 			if ((message == None)or(message == '')):
-				pass
+				raise cherrypy.HTTPRedirect('/openMessagingPage?destination='+destination)
 			destinationUserData = self.getUserData(destination)
 			ip = destinationUserData[2]
 			port = destinationUserData[5]
@@ -561,11 +590,16 @@ class MainApp(object):
 			data = json.dumps(output_dict) #data is a JSON object
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveMessage', data, {'Content-Type':'application/json'})
 			response = urllib2.urlopen(request)
+			print 'sendMessageTest'
 			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], output_dict['message'], output_dict['stamp'], '0','false', None,None)
 			print response.read()
-		except:
-			print 'sendMessageError'
-		#redirect back to messaging page	
+		except Exception as e: 
+			print e
+			print 'send message error'
+			if(sender==None)or(destination==None):
+				raise cherrypy.HTTPRedirect('/login')
+		#redirect back to messaging page
+		raise cherrypy.HTTPRedirect('/openMessagingPage?destination='+destination)	
 		
 	WEB_ROOT = os.path.join(os.getcwd(), 'public') 
 
