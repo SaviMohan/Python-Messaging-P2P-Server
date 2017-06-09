@@ -2,7 +2,7 @@
 <html >
 <head>
   <meta charset="UTF-8">
-  <title>My Profile</title>
+  <title>User Profile</title>
   
   
   
@@ -13,17 +13,17 @@
 
 <body>
   <div id="outer">
-  <div class="inner"><button type="submit" class="msgBtn" onClick="return false;" >View Users</button></div>
-  <div class="inner"><button type="submit" class="msgBtn" onClick="return false;">View My Profile</button></div>
-  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewOnlineUsers'">Edit My Profile</button></div>
-  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/viewOnlineUsers'">Log Out</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/openUsersListPage'" >View Users</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewProfilePage'">View My Profile</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/editProfile'">Edit My Profile</button></div>
+  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/signout'">Log Out</button></div>
 </div>
-<h1 style="text-align:center">MY PROFILE</h1>
+<h1 style="text-align:center">{profileHeading:} PROFILE</h1>
 
 <div class="ui">
-  <img src="http://www.robotspacebrain.com/wp-content/uploads/2013/05/Daft-Punk-Helmet-GIFs-6.gif" alt="Profile Picture 380x420" height="420" width="380">
+  <img src="{image:}" alt="Profile Picture 380x420" height="420" width="380">
   
-  <h1 style="text-align:center">NAME: {fullname:}<br><br>POSITION: {position:}<br><br>DESCRIPTION: {description:}<br><br>LOCATION: {location:}</h1>
+  <h1 style="text-align:center">{UPI:}<br><br>NAME: {fullname:}<br><br>POSITION: {position:}<br><br>DESCRIPTION: {description:}<br><br>LOCATION: {location:}</h1>
  
   
 </div>

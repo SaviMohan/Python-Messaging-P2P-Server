@@ -13,10 +13,10 @@
 
 <body>
   <div id="outer">
-  <div class="inner"><button type="submit" class="msgBtn" onClick="return false;" >View Users</button></div>
-  <div class="inner"><button type="submit" class="msgBtn" onClick="return false;">View My Profile</button></div>
-  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewOnlineUsers'">Edit My Profile</button></div>
-  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/viewOnlineUsers'">Log Out</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/openUsersListPage'" >View Users</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewProfilePage'">View My Profile</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/editProfile'">Edit My Profile</button></div>
+  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/signout'">Log Out</button></div>
 </div>
 <h1 style="text-align:center">EDIT MY PROFILE</h1>
 <div class="ui">
@@ -29,6 +29,7 @@
 			Description: <input type="text" name="description"/><br/>
 			Location: <input type="text" name="location"/><br/>
 			Picture: <input type="text" name="picture"/>
+			<input name = "username" value="{clientUsername:}" type="hidden">
 			<input type="submit" value="Save Changes"/>
 		</form>
   

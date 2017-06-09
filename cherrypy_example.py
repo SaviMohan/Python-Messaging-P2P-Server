@@ -30,7 +30,7 @@ import socket
 from cherrypy.process.plugins import Monitor
 import thread
 import base64
-#import markdown
+import markdown
 from operator import xor
 
 class MainApp(object):
@@ -84,7 +84,7 @@ class MainApp(object):
 		conn = sqlite3.connect(DB_USER_DATA)
 		c = conn.cursor()
 		for UPI in serversUsersList:		
-			c.execute("INSERT INTO ClientProfiles (profile_username,picture) SELECT ?,'https://pixabay.com/p-973460/?no_redirect' WHERE NOT EXISTS (SELECT * FROM ClientProfiles WHERE profile_username = ?)", (UPI,UPI))
+			c.execute("INSERT INTO ClientProfiles (profile_username,picture) SELECT ?,'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png' WHERE NOT EXISTS (SELECT * FROM ClientProfiles WHERE profile_username = ?)", (UPI,UPI))
 		
 		conn.commit() # commit actions to the database
 		conn.close()
@@ -110,9 +110,9 @@ class MainApp(object):
 		return userData	
 	
 	@cherrypy.expose######################
-	def updateClientProfileDetails(self, fullname=None, position=None, description=None, location=None, picture=None):
+	def updateClientProfileDetails(self,username=None, fullname=None, position=None, description=None, location=None, picture=None):
 		""" """
-		username = cherrypy.session['username']
+		#username = cherrypy.session['username']
 		conn = sqlite3.connect(DB_USER_DATA)
 		c = conn.cursor()
 		
@@ -266,19 +266,21 @@ class MainApp(object):
 	# PAGES (which return HTML that can be viewed in browser)
 	@cherrypy.expose
 	def index(self):
-		Page = "Welcome! This is a test website for COMPSYS302!<br/>"
+		#Page = "Welcome! This is a test website for COMPSYS302!<br/>"
 		
 		try:
-			Page += "Hello " + cherrypy.session['username'] + "!<br/>"
-			Page += "Here is some bonus text because you've logged in!"
+			username = cherrypy.session['username'] 
+			raise cherrypy.HTTPRedirect('/openUsersListPage')
+			#Page += "Hello " + cherrypy.session['username'] + "!<br/>"
+			#Page += "Here is some bonus text because you've logged in!"
 			
-			Page += "Click here to <a href='editProfile'>Edit Profile</a>."
+			#Page += "Click here to <a href='editProfile'>Edit Profile</a>."
 			
-			Page += '<form action="/openMessagingPage?destination=abha808" method="post" enctype="multipart/form-data">'
-			Page += '<input type="submit" value="List of online users"/></form>'
+			#Page += '<form action="/openMessagingPage?destination=abha808" method="post" enctype="multipart/form-data">'
+			#Page += '<input type="submit" value="List of online users"/></form>'
 		except KeyError: #There is no username
-		    
-		    Page += "Click here to <a href='login'>login</a>."
+		    raise cherrypy.HTTPRedirect('/login')
+		    #Page += "Click here to <a href='login'>login</a>."
 		return Page
 	
 	@cherrypy.expose
@@ -301,6 +303,7 @@ class MainApp(object):
 			client = cherrypy.session['username']
 			destinationUserData = self.getUserData(destination)
 			messages = self.getMessages(client,destination)
+			messages.reverse()
 			if (not(destinationUserData[4]==None)):
 				lastLogin = (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(destinationUserData[4]))))
 			else:
@@ -309,10 +312,15 @@ class MainApp(object):
 			#userConversation = '<li class="i"> <div class="head"> <span class="time">10:13 AM, Today</span> <span class="name">You</span> </div> <div class="message">Initial</div>  </li>'
 			userConversation = ''
 			for message in messages:
+				if (str(message[5])=='1'):
+					userMessage = markdown.markdown(message[3])
+				else:
+					userMessage = message[3]
+				
 				if((client==message[1])and(destination==message[2])):#message sent by client
-					userConversation += ('<li class="i"> <div class="head"> <span class="time">'+(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(message[4]))))+'</span> <span class="name">You</span> </div> <div class="message">'+message[3]+'</div>  </li>')	
+					userConversation += ('<li class="i"> <div class="head"> <span class="time">'+(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(message[4]))))+'</span> <span class="name">You</span> </div> <div class="message">'+userMessage+'</div>  </li>')	
 				elif((client==message[2])and(destination==message[1])):#message sent from destination
-					userConversation += ('<li class="friend"> <div class="head"> <span class="name">'+destination+'</span> <span class="time">'+(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(message[4]))))+'</span> </div> <div class="message">'+message[3]+'</div> </li>')
+					userConversation += ('<li class="friend"> <div class="head"> <span class="name">'+destination+'</span> <span class="time">'+(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(message[4]))))+'</span> </div> <div class="message">'+userMessage+'</div> </li>')
 			Page = open('messaging.html').read().format(receiverUsername = destination, senderUsername = client,userDetails = destinationUserDetails,userMessages=userConversation)
 			return Page
 		except:
@@ -326,39 +334,87 @@ class MainApp(object):
 			usersData = self.getAllUsersData()
 			userDetails = ''
 			for user in usersData:
-				print user[1]
-				userDetails += ('''<div class="user"><button type="submit" class="msgBtn2" onclick="window.location.href='/openMessagingPage?destination='''+user[1]+''''">'''+user[1]+'''---'''+user[6]+'''</button><button type=submit class="msgBtn3" onclick="window.location.href='/viewOnlineUsers'">View Profile</button></div>''')	
-			Page = open('usersPage.html').read().format(userList = userDetails)
+				#print user[1]
+				userDetails += ('''<div class="user"><button type="submit" class="msgBtn2" onclick="window.location.href='/openMessagingPage?destination='''+user[1]+''''">'''+user[1]+'''---'''+user[6]+'''</button><button type=submit class="msgBtn3" onclick="window.location.href='/viewProfilePage?username='''+user[1]+''''">View Profile</button></div>''')	
+			Page = open('usersPage.html').read().format(userList = userDetails,username=client)
 			return Page
 		except:	
-			pass #redirect back to login page
+			raise cherrypy.HTTPRedirect('/login') #redirect back to login page
 	
 	@cherrypy.expose
 	def viewProfilePage(self,username=None):
-		pass		
+		try:
+			client = cherrypy.session['username']
+		except:
+			raise cherrypy.HTTPRedirect('/login')
+		finally:
+			try:
+				if username == None:
+					#raise cherrypy.HTTPRedirect('/openUsersListPage')
+					username = client
+				if (client == username): #The current logged in user requesting to see their own profile page
+					clientData = self.getClientProfile(client)
+					
+					Page = open('viewProfile.html').read().format(profileHeading = 'MY',UPI = client,fullname=clientData[2],position=clientData[3],description=clientData[4],location=clientData[5],image=clientData[6])
+					return Page
+				else:
+					userData = self.getUserData(username)
+					
+					ip = userData[2]
+					port = userData[5]
+					
+					print'testProfilePage3'
+					output_dict = {'sender':client,'profile_username':username}
+					print output_dict
+					print'testProfilePage3'
+					data = json.dumps(output_dict) #data is a JSON object
+					
+					request = urllib2.Request('http://'+ ip + ':' + port + '/getProfile' , data, {'Content-Type':'application/json'})
+					
+					response = urllib2.urlopen(request).read()
+					
+					responseDict = (json.loads(response))
+					print responseDict
+					Page = open('viewProfile.html').read().format(profileHeading = 'USER',UPI = username,fullname=responseDict['fullname'],position=responseDict['position'],description=responseDict['description'],location=responseDict['location'],image=responseDict['picture'])
+					return Page
+			except:
+				print'testProfilePage'
+				Page = open('viewProfile.html').read().format(profileHeading = 'No data available for USER',UPI = username,fullname='',position='',description='',location='',image='')
+				return Page
+				#raise cherrypy.HTTPRedirect('/openUsersListPage')
 		
 	@cherrypy.expose
 	def editProfile(self):#########################
-		#return open('editProfile.html')
-		return open('messaging.html')	
+		try:
+			Page = open('editProfile.html').read().format(clientUsername=cherrypy.session['username'])	
+			return Page
+		except:
+			raise cherrypy.HTTPRedirect('/openUsersListPage')	
+		
+		
+		#return open('messaging.html')	
     
 	@cherrypy.expose
 	def ping(self, sender=None):
-		return '0'
+		if (sender ==None):
+			return '1: Missing Compulsory Field'
+		else:	
+			return '0'
 	
 	@cherrypy.expose
 	@cherrypy.tools.json_in()
-	def getProfile(self,sender=None):
+	def getProfile(self):
 		try:
 			input = cherrypy.request.json
-			if(not('sender' in input)):
-				pass
+			if((not('sender' in input))or(not('profile_username' in input))):
+				
+				return '1: Missing Compulsory Field'
 				
 			profileData = self.getClientProfile(input['profile_username'])
 			outputDict = {'fullname':profileData[2],'position':profileData[3],'description':profileData[4], 'location':profileData[5], 'picture':profileData[6], 'encoding':profileData[7], 'encryption':profileData[8], 'decryptionKey': profileData[9]}
 			return json.dumps(outputDict) #data is a JSON object
 		except:
-			return '1: Missing Compulsory Field'	
+			return 'Error: Something Went Wrong'	
 
 	
 	@cherrypy.expose
@@ -367,9 +423,15 @@ class MainApp(object):
 		try:
 			input_data = cherrypy.request.json
 			print input_data['sender']
-			if (((len(input_data['file'])*(3/4)))>5242880):
+			base64Length = len(input_data['file'])
+			fileLength = base64Length * 0.75
+			print fileLength
+			if (fileLength>5242880):
 				return ('4: File exceeds 5MB')
+			#print ((len(input_data['file'])*(3/4)))
+			
 			inputFile = (input_data['file']).decode('base64')
+			#os.path.getsize(inputFile)
 			fileName = input_data['filename']#
 			
 			print 'test point'
@@ -397,19 +459,19 @@ class MainApp(object):
 			return ('Error: Something went wrong')
 		
 	@cherrypy.expose
-	def sendFile(self, sender='smoh944', destination='abha808', outFile=None,ip='10.103.137.62',port='10001',content_type=None,filename=None,encryption=0, hashing = 0, hashedFile = None, decryptionKey=None):
+	def sendFile(self, sender='smoh944', destination=None, outFile=None,ip='10.103.137.62',port='10001',content_type=None,filename=None,encryption=0, hashing = 0, hashedFile = None, decryptionKey=None):
 		try:	
-			destination='abha808'
+			#destination='abha808'
 			destinationUserData = self.getUserData(destination)
 			ip = destinationUserData[2]
 			port = destinationUserData[5]
 			#print destinationUserData[2]
 			#print destinationUserData[5]
 			sender='smoh944'
-			destination='abha808'
+			#destination='abha808'
 			fileName = outFile.filename
 			content_type = outFile.content_type.value
-			print fileName
+			print (fileName + ' is preparing to be sent') 
 			#file='HelloThisisaTest'
 			encoded = base64.b64encode(outFile.file.read())
 			print fileName
@@ -417,17 +479,24 @@ class MainApp(object):
 			data = json.dumps(output_dict) #data is a JSON object
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveFile' , data, {'Content-Type':'application/json'})
 			response = urllib2.urlopen(request)
-			print response.read()
-			if 'image/' in input_data['content_type']:
-				fileMessage = '<img src="receivedFiles/'+fileName+'" alt= Picture 250x200 height="200" width="250">'	
-			elif 'video/' in input_data['content_type']:
-				fileMessage = '<video width="250" height="200" controls><source src="'+'receivedFiles/'+fileName+'">Your browser does not support the video tag.</video>'
-			elif 'audio/' in input_data['content_type']:
+			print ('file send response: '+response.read())
+			if 'image/' in content_type:
+				print 'imagetest'
+				fileMessage = '<img src="receivedFiles/'+fileName+'" alt= "Picture 380x320" height="320" width="380">'	
+				#fileMessage = '''<img src="receivedFiles/maxresdefault.jpg" alt= Picture 380x320 height="320" width="380">'''
+			elif 'video/' in content_type:
+				fileMessage = '<video width="380" height="320" controls><source src="'+'receivedFiles/'+fileName+'">Your browser does not support the video tag.</video>'
+			elif 'audio/' in content_type:
 				fileMessage = '<audio controls> <source src="'+'receivedFiles/'+fileName+'">Your browser does not support the audio element.</audio>'
 			else:
 				fileMessage = '<a href="receivedFiles/'+fileName+'" download>'+fileName +'</a>'
 			
 			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], fileMessage, output_dict['stamp'], '0','true', fileName, content_type)
+			saveFile = open('public/receivedFiles/'+fileName,'wb')
+			print (fileName+'2')
+			saveFile.write((output_dict['file']).decode('base64'))
+			saveFile.close
+			
 		except:
 			print 'file send error'
 			if(sender==None)or(destination==None):
@@ -466,7 +535,7 @@ class MainApp(object):
 			cherrypy.session['hashedPassword'] = hashOfPasswordPlusSalt;
 			#self.sendMessage()
 			self.openUsersListPage()
-			self.getMessages('smoh944', 'abha808')
+			#self.getMessages('smoh944', 'abha808')
 			self.serverReportThreading(cherrypy.session['username'],cherrypy.session['hashedPassword'])
 			raise cherrypy.HTTPRedirect('/openUsersListPage')
 		else:
@@ -537,7 +606,7 @@ class MainApp(object):
 		#self.populateAllUsersTable()
 		#self.getClientProfile()
 		
-		self.insertIntoMessagesTable('smoh944', 'abha808', 'testingadil', float(time.time()), '0','false', None)
+		#self.insertIntoMessagesTable('smoh944', 'abha808', 'testingadil', float(time.time()), '0','false', None)
 		
 		#self.sendMessage()
 		#self.sendFile()
@@ -556,42 +625,49 @@ class MainApp(object):
 			#return '0: '
 			if(not('sender' in input_data))or(not('destination' in input_data))or(not('message' in input_data))or(not('stamp' in input_data)):
 				return '1: Missing Compulsory Field' ####WHAT  IF ONE OF THESE FIELDS IS EMPTY?
-			#if ('markdown' in input_data):
-				#if (input_data['markdown'] == '1'):
-					#message = markdown.markdown(input_data['message'])
-				#else:
-					#message = input_data['message'] 
-			#else:
-				#message = input_data['message'] 
-			
-			if('encryption' in input_data):
-				if (input_data['encryption'] == 1)or(input_data['encryption'] == 0):
-					encryption = input_data['encryption']
+			markDown='0'
+			if ('markdown' in input_data):
+				if ((str(input_data['markdown'])) == '1'):
+					print 'receiveMessageTest1'
+					message = markdown.markdown(input_data['message'])
+					print 'receiveMessageTesta'
 				else:
+					print 'receiveMessageTest2'
+					message = input_data['message'] 
+			else:
+				print 'receiveMessageTest3'
+				message = input_data['message'] 
+			print 'receiveMessageTest'
+			if('encryption' in input_data):
+				if (not(str(input_data['encryption']) == '0')):
+					#encryption = input_data['encryption']
+				#else:
 					return '9: Encryption Standard Not Supported' 	
 				
 			print input_data
-			self.insertIntoMessagesTable(input_data['sender'], input_data['destination'], input_data['message'], input_data['stamp'], '0','false', None,None)
+			self.insertIntoMessagesTable(input_data['sender'], input_data['destination'], message, input_data['stamp'], markDown,'false', None,None)
 			return ('0: Success')
-		except:
+		except Exception as e: 
+			print e
 			return ('Error: Something went wrong')
 		
 	@cherrypy.expose
 	#def sendMessage(self, sender='smoh944', destination='abha808', message='Hello This is a Test',ip='172.24.26.17',port='10001',markdown='0',encoding='0',encryption='0', hashing = '0', hashedMessage = '', decryptionKey='0'):
-	def sendMessage(self, sender='smoh944', destination='abha808', message='Hello This is a Test2',ip='10.103.137.62',port='10001',markdown='1',encryption='0', hashing = '0', hashedMessage = None, decryptionKey=None):	
+	def sendMessage(self, sender=None, destination=None, message='Default Message',markDown='0',encryption=0, hashing = 0, hashedMessage = None, decryptionKey=None):	
 		try:	
 			if ((message == None)or(message == '')):
 				raise cherrypy.HTTPRedirect('/openMessagingPage?destination='+destination)
 			destinationUserData = self.getUserData(destination)
 			ip = destinationUserData[2]
 			port = destinationUserData[5]
-				
-			output_dict = {'sender':sender,'destination':destination,'message':message, 'stamp':float(time.time()), 'markdown':markdown, 'encryption':encryption, 'hashing':hashing, 'hash': hashedMessage, 'decryptionKey':decryptionKey}
+			#print destination	
+			output_dict = {'sender':sender,'destination':destination,'message':message, 'stamp':float(time.time()), 'markdown':int(markDown), 'encryption':encryption, 'hashing':hashing, 'hash': hashedMessage, 'decryptionKey':decryptionKey}
 			data = json.dumps(output_dict) #data is a JSON object
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveMessage', data, {'Content-Type':'application/json'})
 			response = urllib2.urlopen(request)
 			print 'sendMessageTest'
-			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], output_dict['message'], output_dict['stamp'], '0','false', None,None)
+			
+			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], output_dict['message'], output_dict['stamp'], int(markDown),'false', None,None)
 			print response.read()
 		except Exception as e: 
 			print e

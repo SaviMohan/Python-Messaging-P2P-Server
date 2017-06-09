@@ -2,7 +2,7 @@
 <html >
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
+  <title>Messaging</title>
   
   
   
@@ -12,14 +12,13 @@
 </head>
 
 <body>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js" ></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/nicescroll/3.5.4/jquery.nicescroll.js" ></script>
+  
 
 <div id="outer">
-  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewOnlineUsers'" >View Users</button></div>
-  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewOnlineUsers'">View My Profile</button></div>
-  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewOnlineUsers'">Edit My Profile</button></div>
-  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/viewOnlineUsers'">Log Out</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/openUsersListPage'" >View Users</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewProfilePage'">View My Profile</button></div>
+  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/editProfile'">Edit My Profile</button></div>
+  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/signout'">Log Out</button></div>
 </div>
 
 <div class="ui">
@@ -46,6 +45,14 @@
 				<input name = "sender" value="{senderUsername:}" type="hidden">
 				
 				<input type="text" name="message"/>
+				
+				
+
+
+				<input type="checkbox" name="markDown" value="1" id="checkBox1"><label for="checkBox1"> Tick for Markdown</label>
+
+
+				
 			  <input type="submit" value="Send Message"/>
 		  </form>
       <form accept-charset="utf-8" action = "/sendFile" method="post" enctype="multipart/form-data" style="float:left;">
