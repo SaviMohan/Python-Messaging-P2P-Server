@@ -50,10 +50,10 @@ class MainApp(object):
 		s.close()
 		#socket.gethostbyname(socket.gethostname())	#internal ip address	
 		externalIP = (urllib2.urlopen(urllib2.Request('http://ident.me'))).read().decode('utf8') #retrieves external ip	#encrypt?
-		print internalIP
-		print externalIP
+		#print internalIP
+		#print externalIP
 		location = self.getLocation(internalIP)
-		print location
+		#print location
 		if((location == '0')or(location == '1')):
 			#print 'testing!!!!!!!!'
 			return str(internalIP)
@@ -77,7 +77,7 @@ class MainApp(object):
 	
 	def populateClientProfilesTable():
 		serverUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/listUsers')
-		serverUsersResponse = urllib2.urlopen(serverUsersRequest)
+		serverUsersResponse = urllib2.urlopen(serverUsersRequest,timeout=5)
 		serverUsersData = serverUsersResponse.read()
 		serversUsersList = serverUsersData.split(',')
 		
@@ -198,7 +198,7 @@ class MainApp(object):
 	
 	def populateAllUsersTable():
 		serverUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/listUsers')
-		serverUsersResponse = urllib2.urlopen(serverUsersRequest)
+		serverUsersResponse = urllib2.urlopen(serverUsersRequest,timeout=10)
 		serverUsersData = serverUsersResponse.read()
 		serversUsersList = serverUsersData.split(',')
 		
@@ -371,7 +371,7 @@ class MainApp(object):
 					
 					request = urllib2.Request('http://'+ ip + ':' + port + '/getProfile' , data, {'Content-Type':'application/json'})
 					
-					response = urllib2.urlopen(request).read()
+					response = urllib2.urlopen(request,timeout=5).read()
 					
 					responseDict = (json.loads(response))
 					print responseDict
@@ -478,7 +478,7 @@ class MainApp(object):
 			output_dict = {'sender':sender,'destination':destination,'file':encoded, 'stamp':float(time.time()), 'filename':fileName,'content_type':content_type, 'encryption':encryption, 'hashing':hashing, 'hash': hashedFile}#, 'decryptionKey':decryptionKey}
 			data = json.dumps(output_dict) #data is a JSON object
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveFile' , data, {'Content-Type':'application/json'})
-			response = urllib2.urlopen(request)
+			response = urllib2.urlopen(request,timeout=5)
 			print ('file send response: '+response.read())
 			if 'image/' in content_type:
 				print 'imagetest'
@@ -551,7 +551,7 @@ class MainApp(object):
 		else:		    
 			#url = 'https://cs302.pythonanywhere.com/logoff?username=' + cherrypy.session['username'] + '&password=' + cherrypy.session['hashedPassword'] + '&enc=0'
 			logoutRequest = urllib2.Request('https://cs302.pythonanywhere.com/logoff?username=' + cherrypy.session['username'] + '&password=' + cherrypy.session['hashedPassword'] + '&enc=0')
-			logoutResponse = urllib2.urlopen(logoutRequest)	
+			logoutResponse = urllib2.urlopen(logoutRequest,timeout=10)	
 			logoutData = logoutResponse.read()
 			print logoutData
 			cherrypy.lib.sessions.expire()
@@ -584,7 +584,7 @@ class MainApp(object):
 			
 		loginRequest = urllib2.Request('http://cs302.pythonanywhere.com/report?username='+username+'&password='+hashedPassword+'&location='+location+'&ip='+ip+'&port='+str(listen_port)+'&enc=0')	#Object which represents the HTTP request we are making
 		#loginRequest = urllib2.Request('http://cs302.pythonanywhere.com/report?username='+username+'&password='+hashOfPasswordPlusSalt+'&location=2&ip=118.92.154.45&port=10001&enc=0')
-		loginResponse = urllib2.urlopen(loginRequest)#Returns a response object for the requested URL
+		loginResponse = urllib2.urlopen(loginRequest,timeout=10)#Returns a response object for the requested URL
 		loginData = loginResponse.read() #The response is a file-like object, so .read() can be called on it
 		
 		#print loginData
@@ -664,7 +664,7 @@ class MainApp(object):
 			output_dict = {'sender':sender,'destination':destination,'message':message, 'stamp':float(time.time()), 'markdown':int(markDown), 'encryption':encryption, 'hashing':hashing, 'hash': hashedMessage, 'decryptionKey':decryptionKey}
 			data = json.dumps(output_dict) #data is a JSON object
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveMessage', data, {'Content-Type':'application/json'})
-			response = urllib2.urlopen(request)
+			response = urllib2.urlopen(request,timeout=5)
 			print 'sendMessageTest'
 			
 			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], output_dict['message'], output_dict['stamp'], int(markDown),'false', None,None)

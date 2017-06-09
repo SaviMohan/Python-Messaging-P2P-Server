@@ -28,7 +28,7 @@ h1 {
   background-color: white;
   color: black;
   border: 2px solid #4CAF50; /* Green */
-  width:800px;
+  width:814px;
   height:100px;
 }
 .msgBtn2:hover {
@@ -61,15 +61,10 @@ body {
   background-color: #fdf;
   border-radius: 3px;
 
-  -webkit-box-orient: horizontal;
-  -webkit-box-direction: normal;
-  -ms-flex-direction: row;
-  flex-direction: row;
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  overflow: hidden;
+  
+  overflow-y: auto;
 }
 .ui .userList {
   overflow-y: auto;
 }
+
