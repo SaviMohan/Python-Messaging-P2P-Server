@@ -1,9 +1,9 @@
 #!/usr/bin/python
-""" cherrypy_example.py
+""" MainFile.py
 
-    COMPSYS302 - Software Design
-    Author: Andrew Chen (andrew.chen@auckland.ac.nz)
-    Last Edited: 19/02/2015
+    COMPSYS302 - Software Design - Python Project
+    Author: Savi Mohan (smoh944@auckland.ac.nz)
+    Last Edited: 11/06/2017
 
     This program uses the CherryPy web server (from www.cherrypy.org).
 """
@@ -16,6 +16,7 @@ listen_port = 10001
 SALT = "COMPSYS302-2017"
 DB_USER_DATA = "relationalDatabase.db"
 
+
 import cherrypy
 import hashlib
 import urllib
@@ -27,7 +28,7 @@ import time
 import os #used to figure out what operating system this is running on
 import webbrowser
 import socket
-from cherrypy.process.plugins import Monitor
+
 import thread
 import base64
 import markdown
@@ -36,7 +37,7 @@ from operator import xor
 class MainApp(object):
 			
 	def getLocation(self,ip):
-		if (('130.216.' in ip)or('10.103.' in ip)or('10.104.' in ip)):########
+		if (('130.216.' in ip)or('10.103.' in ip)or('10.104.' in ip)):#####################################################################################
 			return '0'	#Uni Desktop
 		elif(('172.23.' in ip)or('172.24.' in ip)):
 			return '1'	#Uni WiFi
@@ -48,14 +49,14 @@ class MainApp(object):
 		s.connect(("8.8.8.8",80))
 		internalIP = s.getsockname()[0]
 		s.close()
-		#socket.gethostbyname(socket.gethostname())	#internal ip address	
+			
 		externalIP = (urllib2.urlopen(urllib2.Request('http://ident.me'))).read().decode('utf8') #retrieves external ip	#encrypt?
 		#print internalIP
 		#print externalIP
 		location = self.getLocation(internalIP)
-		#print location
+		
 		if((location == '0')or(location == '1')):
-			#print 'testing!!!!!!!!'
+			
 			return str(internalIP)
 		else:
 			return str(externalIP)
@@ -64,8 +65,7 @@ class MainApp(object):
 	def createClientProfilesTable():
 		conn = sqlite3.connect(DB_USER_DATA)
 		
-		# Database will have UTF-8 encoding
-		#conn.text_factory = str
+		
 		
 		# Once we have a Connection, we can create a Cursor object and call its execute() method to perform SQL commands
 		c = conn.cursor()
@@ -84,7 +84,7 @@ class MainApp(object):
 		conn = sqlite3.connect(DB_USER_DATA)
 		c = conn.cursor()
 		for UPI in serversUsersList:		
-			c.execute("INSERT INTO ClientProfiles (profile_username,picture) SELECT ?,'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png' WHERE NOT EXISTS (SELECT * FROM ClientProfiles WHERE profile_username = ?)", (UPI,UPI))
+			c.execute("INSERT INTO ClientProfiles (profile_username,picture) SELECT ?,'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Superman-facebook.svg/658px-Superman-facebook.svg.png' WHERE NOT EXISTS (SELECT * FROM ClientProfiles WHERE profile_username = ?)", (UPI,UPI))
 		
 		conn.commit() # commit actions to the database
 		conn.close()
@@ -95,7 +95,7 @@ class MainApp(object):
 		c.execute('''SELECT * FROM ClientProfiles WHERE profile_username = ?''', (profile_username,))
 		profileData = c.fetchone()
 		conn.close()
-		#print profileData
+		
 		return profileData
 		
 	def getUserData(self,username=''):
@@ -104,15 +104,15 @@ class MainApp(object):
 		c.execute('''SELECT * FROM AllUsers WHERE username = ?''', (username,))
 		userData = c.fetchone()
 		conn.close()
-		print 'test'
-		print userData
-		print 'test'
+		#print 'test'
+		#print userData
+		#print 'test'
 		return userData	
 	
 	@cherrypy.expose######################
 	def updateClientProfileDetails(self,username=None, fullname=None, position=None, description=None, location=None, picture=None):
 		""" """
-		#username = cherrypy.session['username']
+		
 		conn = sqlite3.connect(DB_USER_DATA)
 		c = conn.cursor()
 		
@@ -129,18 +129,12 @@ class MainApp(object):
 		
 		conn.commit()
 		conn.close()
-		#error = self.authoriseUserLogin(username,password)
-		#if (error == 0):
-		#    cherrypy.session['username'] = username;
+		
 		raise cherrypy.HTTPRedirect('/')
-		#else:
-		#    raise cherrypy.HTTPRedirect('/login')
+		
 	
 	def createMessagesTable():
 		conn = sqlite3.connect(DB_USER_DATA)
-		
-		# Database will have UTF-8 encoding
-		#conn.text_factory = str
 		
 		# Once we have a Connection, we can create a Cursor object and call its execute() method to perform SQL commands
 		c = conn.cursor()
@@ -157,13 +151,24 @@ class MainApp(object):
 		messages = c.fetchall()
 		conn.commit()
 		conn.close()
-		#return (sentMessages, receivedMessages)
-		#print messages
-		for message in messages:
-			#print message[4]
-			#message[4]=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(message[4])))
-			print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(message[4]))))
+		
+		#for message in messages:
+			
+			#print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(message[4]))))
 		return messages
+		
+	def getMessagesForOneUser(self, destination=''):
+		conn = sqlite3.connect(DB_USER_DATA)
+		c = conn.cursor()
+		c.execute('''SELECT * FROM Messages WHERE ( destination=?) order by stamp ''',(destination))
+		messages = c.fetchall()
+		conn.commit()
+		conn.close()
+		
+		#for message in messages:
+			
+			#print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(message[4]))))
+		return messages	
 		
 	def insertIntoMessagesTable(self, sender = None, destination = None, message = None, stamp = None, markdown = '0',isFile = 'false', fileLink = None, fileType = None,fileName=None):	
 		conn = sqlite3.connect(DB_USER_DATA)
@@ -184,8 +189,7 @@ class MainApp(object):
 	def createAllUsersTable():
 		conn = sqlite3.connect(DB_USER_DATA)
 		
-		# Database will have UTF-8 encoding
-		#conn.text_factory = str
+		
 		
 		# Once we have a Connection, we can create a Cursor object and call its execute() method to perform SQL commands
 		c = conn.cursor()
@@ -245,16 +249,12 @@ class MainApp(object):
 	populateAllUsersTable()
 	createClientProfilesTable()
 	populateClientProfilesTable()
-	#lock = thread.allocate_lock()
-	#IP = getIP()	
 	
-	#webbrowser.open_new('http://%s:%d/' % (listen_ip, listen_port)) # Opens web browser            
-	#CherryPy Configuration
+	def __init__(self):
+		cherrypy.engine.subscribe('stop',self.serverExitLogOff)
+		self.currentUser = None
+		self.currentUserHashedPassword = None
 	
-	#_cp_config = {'tools.encode.on': True, 
-                  #'tools.encode.encoding': 'utf-8',
-                  #'tools.sessions.on' : 'True',
-                 #}             
 	# If they try somewhere we don't know, catch it here and send them to the right place.
 	@cherrypy.expose
 	def default(self, *args, **kwargs):
@@ -422,21 +422,24 @@ class MainApp(object):
 	def receiveFile(self):
 		try:
 			input_data = cherrypy.request.json
-			print input_data['sender']
+			
+			if(not('sender' in input_data))or(not('destination' in input_data))or(not('file' in input_data))or(not('stamp' in input_data)or(not('filename' in input_data))or(not('content_type' in input_data)):
+				return '1: Missing Compulsory Field' ####WHAT  IF ONE OF THESE FIELDS IS EMPTY?
+			
+			if('encryption' in input_data):
+				if (not(str(input_data['encryption']) == '0')):
+					return '9: Encryption Standard Not Supported' 
+			print ('file sent from: '+input_data['sender'])
 			base64Length = len(input_data['file'])
 			fileLength = base64Length * 0.75
-			print fileLength
+			#print fileLength
 			if (fileLength>5242880):
 				return ('4: File exceeds 5MB')
-			#print ((len(input_data['file'])*(3/4)))
-			
+						
 			inputFile = (input_data['file']).decode('base64')
-			#os.path.getsize(inputFile)
-			fileName = input_data['filename']#
 			
-			print 'test point'
-			#fileMessage = '<a href="'+'receivedFiles/'+fileName
-			#<img src="http://www.robotspacebrain.com/wp-content/uploads/2013/05/Daft-Punk-Helmet-GIFs-6.gif" alt="Profile Picture 380x420" height="420" width="380">
+			fileName = input_data['filename']
+						
 			if 'image/' in input_data['content_type']:
 				fileMessage = '<img src="receivedFiles/'+fileName+'" alt= Picture 250x200 height="200" width="250">'	
 			elif 'video/' in input_data['content_type']:
@@ -445,37 +448,34 @@ class MainApp(object):
 				fileMessage = '<audio controls> <source src="'+'receivedFiles/'+fileName+'">Your browser does not support the audio element.</audio>'
 			else:
 				fileMessage = '<a href="receivedFiles/'+fileName+'" download>'+fileName +'</a>'
-			
-			
-			#fileMessage = '<img src="'+'receivedFiles/'+fileName+'" alt= Picture 380x320 height="320" width="380">'
+						
 			self.insertIntoMessagesTable(input_data['sender'], input_data['destination'], fileMessage, input_data['stamp'], '0','true', fileName,input_data['content_type'])
-			print fileName
+			
 			outFile = open('public/receivedFiles/'+fileName,'wb')
-			print (fileName+'2')
 			outFile.write(inputFile)
 			outFile.close
+			print (fileName+' has been received')
 			return ('0: Success')
 		except:
 			return ('Error: Something went wrong')
 		
 	@cherrypy.expose
-	def sendFile(self, sender='smoh944', destination=None, outFile=None,ip='10.103.137.62',port='10001',content_type=None,filename=None,encryption=0, hashing = 0, hashedFile = None, decryptionKey=None):
+	def sendFile(self, sender=None, destination=None, outFile=None,stamp = None,encryption=0, hashing = 0, hashedFile = None, decryptionKey=None):
 		try:	
-			#destination='abha808'
+			
 			destinationUserData = self.getUserData(destination)
 			ip = destinationUserData[2]
 			port = destinationUserData[5]
-			#print destinationUserData[2]
-			#print destinationUserData[5]
-			sender='smoh944'
-			#destination='abha808'
+			if (stamp == None)or(stamp== ''):
+				stamp = float(time.time())
+						
 			fileName = outFile.filename
 			content_type = outFile.content_type.value
 			print (fileName + ' is preparing to be sent') 
-			#file='HelloThisisaTest'
+			
 			encoded = base64.b64encode(outFile.file.read())
-			print fileName
-			output_dict = {'sender':sender,'destination':destination,'file':encoded, 'stamp':float(time.time()), 'filename':fileName,'content_type':content_type, 'encryption':encryption, 'hashing':hashing, 'hash': hashedFile}#, 'decryptionKey':decryptionKey}
+			
+			output_dict = {'sender':sender,'destination':destination,'file':encoded, 'stamp':stamp, 'filename':fileName,'content_type':content_type, 'encryption':encryption, 'hashing':hashing, 'hash': hashedFile}#, 'decryptionKey':decryptionKey}
 			data = json.dumps(output_dict) #data is a JSON object
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveFile' , data, {'Content-Type':'application/json'})
 			response = urllib2.urlopen(request,timeout=5)
@@ -483,7 +483,7 @@ class MainApp(object):
 			if 'image/' in content_type:
 				print 'imagetest'
 				fileMessage = '<img src="receivedFiles/'+fileName+'" alt= "Picture 380x320" height="320" width="380">'	
-				#fileMessage = '''<img src="receivedFiles/maxresdefault.jpg" alt= Picture 380x320 height="320" width="380">'''
+				
 			elif 'video/' in content_type:
 				fileMessage = '<video width="380" height="320" controls><source src="'+'receivedFiles/'+fileName+'">Your browser does not support the video tag.</video>'
 			elif 'audio/' in content_type:
@@ -492,8 +492,8 @@ class MainApp(object):
 				fileMessage = '<a href="receivedFiles/'+fileName+'" download>'+fileName +'</a>'
 			
 			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], fileMessage, output_dict['stamp'], '0','true', fileName, content_type)
+			
 			saveFile = open('public/receivedFiles/'+fileName,'wb')
-			print (fileName+'2')
 			saveFile.write((output_dict['file']).decode('base64'))
 			saveFile.close
 			
@@ -503,14 +503,12 @@ class MainApp(object):
 				raise cherrypy.HTTPRedirect('/login')
 		raise cherrypy.HTTPRedirect('/openMessagingPage?destination='+destination)	
 		#redirect back to destination user page
-	#@cherrypy.expose
-	#def messageUserPage(self,destination = ''):
-		#Page = open('messaging.html').read().format(receiverUsername = destination)
+	
 	
 	@cherrypy.expose
 	def viewOnlineUsers(self):
 		""" """
-		#self.authoriseUserLogin()
+		
 		try:
 			Page = 'Users: '+cherrypy.session['onlineUsersData']+'<br/>'	
 		except KeyError: #There is no online user list
@@ -533,9 +531,10 @@ class MainApp(object):
 		if (error == 0):
 			cherrypy.session['username'] = username;
 			cherrypy.session['hashedPassword'] = hashOfPasswordPlusSalt;
-			#self.sendMessage()
-			self.openUsersListPage()
-			#self.getMessages('smoh944', 'abha808')
+			self.currentUser = cherrypy.session['username']
+			self.currentUserHashedPassword = cherrypy.session['hashedPassword']
+			self.openUsersListPage()############################################################################################################################
+			
 			self.serverReportThreading(cherrypy.session['username'],cherrypy.session['hashedPassword'])
 			raise cherrypy.HTTPRedirect('/openUsersListPage')
 		else:
@@ -543,78 +542,183 @@ class MainApp(object):
 			raise cherrypy.HTTPRedirect('/login')
 
 	@cherrypy.expose
-	def signout(self):
+	def signout(self,serverShutDown = False):
 		"""Logs the current user out, expires their session"""
-		username = cherrypy.session.get('username')
-		if (username == None):
-			pass
-		else:		    
-			#url = 'https://cs302.pythonanywhere.com/logoff?username=' + cherrypy.session['username'] + '&password=' + cherrypy.session['hashedPassword'] + '&enc=0'
-			logoutRequest = urllib2.Request('https://cs302.pythonanywhere.com/logoff?username=' + cherrypy.session['username'] + '&password=' + cherrypy.session['hashedPassword'] + '&enc=0')
-			logoutResponse = urllib2.urlopen(logoutRequest,timeout=10)	
-			logoutData = logoutResponse.read()
-			print logoutData
-			cherrypy.lib.sessions.expire()
-		raise cherrypy.HTTPRedirect('/login')
+		redirectToLoginPage = False
+		username = None
+		try:			
+			try:
+				username = cherrypy.session['username']
+				hashedPassword = cherrypy.session['hashedPassword']
+			except:
+				username = self.currentUser
+				hashedPassword = self.currentUserHashedPassword
+			if (username == None):
+				pass
+			else:					
+				logoutRequest = urllib2.Request('https://cs302.pythonanywhere.com/logoff?username=' + username + '&password=' + hashedPassword + '&enc=0')
+				logoutResponse = urllib2.urlopen(logoutRequest)	
+				logoutData = logoutResponse.read()
+				print ('Server Logout Report: '+logoutData)
+				if(serverShutDown == True):
+					return
+				
+				
+				cherrypy.lib.sessions.expire()			
+			redirectToLoginPage = True			
+		except:			
+			try:
+				cherrypy.lib.sessions.expire()
+			except:
+				pass
+			redirectToLoginPage = True
+			
+		if(serverShutDown == True):
+			return			
+		if(redirectToLoginPage):
+			raise cherrypy.HTTPRedirect('/login')
+		
+	def serverExitLogOff(self):
+		print('Server Exit Procedure Initiated')
+		self.signout(True)	
         
 	def serverReportThreading(self,username,hashedPassword):
 		thread.start_new_thread(self.serverReportTimer, (username,hashedPassword))
-
+		#thread.exit()
+		
 	def serverReportTimer(self,username,hashedPassword):
 		beginTime=time.time()
-		while True:
-			time.sleep(30.0-((time.time()-beginTime)%30.0))#how many secs there are to the nearest 50 sec block of time, 50 minus that to figure out how long you have to sleep, the reason I do this is to account for variable execution times for self.authoriseUserLogin()
-			try:
-				self.authoriseUserLogin(username,hashedPassword)
-			except:
-				pass	
+		loop = True
+		
+		while (loop == True):
+			time.sleep(30.0-((time.time()-beginTime)%30.0))#how many secs there are to the nearest 30 sec block of time, 30 minus that to figure out how long you have to sleep, the reason I do this is to account for variable execution times for self.authoriseUserLogin()
+			#print (self.checkIfStillLoggedIn(username,hashedPassword))
+			if(self.checkIfStillLoggedIn(username,hashedPassword)):	
+				try:
+					self.authoriseUserLogin(username,hashedPassword)
+				except:
+					pass	
+			else:			
+				loop = False
+		print 'server login report thread exited'
+		thread.exit()		
 	
-	def authoriseUserLogin(self, username=None, hashedPassword=None):
-		#if(not(password==None)):
-			#passwordPlusSalt = password + SALT
-			#hashOfPasswordPlusSalt = hashlib.sha256(passwordPlusSalt).hexdigest()
-			#print hashOfPasswordPlusSalt
-
-		#2cc4ba400f5105057f065f06ae9d758eb4388783038d738d6684666cb4297751
-		#smoh944
-		ip = self.getIP()
-		location = self.getLocation(ip)
-		if ((username==None)or(username=='')or(hashedPassword==None)or(hashedPassword=='')):
-			return 1	
-			
-		loginRequest = urllib2.Request('http://cs302.pythonanywhere.com/report?username='+username+'&password='+hashedPassword+'&location='+location+'&ip='+ip+'&port='+str(listen_port)+'&enc=0')	#Object which represents the HTTP request we are making
-		#loginRequest = urllib2.Request('http://cs302.pythonanywhere.com/report?username='+username+'&password='+hashOfPasswordPlusSalt+'&location=2&ip=118.92.154.45&port=10001&enc=0')
-		loginResponse = urllib2.urlopen(loginRequest,timeout=10)#Returns a response object for the requested URL
-		loginData = loginResponse.read() #The response is a file-like object, so .read() can be called on it
-		
-		#print loginData
-		print loginData
-		#print cherrypy.session.id
-		#print password
-		
-		if(loginData[0]=='0'):
+	def checkIfStillLoggedIn(self, username=None, hashedPassword=None):
+		try:
+			ip = self.getIP()
+			location = self.getLocation(ip)
 			onlineUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/getList?username='+username+'&password='+hashedPassword+'&enc=0&json=1')
 			onlineUsersResponse = urllib2.urlopen(onlineUsersRequest)
 			onlineUsersData = onlineUsersResponse.read()
-			#self.lock.acquire()
-			self.updateAllUsersTable(onlineUsersData)
-			#self.lock.release()
+			onlineUsersData = json.loads(onlineUsersData)
+			#print onlineUsersData
+			for value in onlineUsersData.itervalues():
+				#print value['username']
+				#print username
+				if(value['username']==username):
+					return True
+			
+		except:
+			pass
+		return False
+	
+	def authoriseUserLogin(self, username=None, hashedPassword=None):
+		try:
+			ip = self.getIP()
+			location = self.getLocation(ip)
+			if ((username==None)or(username=='')or(hashedPassword==None)or(hashedPassword=='')):
+				return 1	
+				
+			loginRequest = urllib2.Request('http://cs302.pythonanywhere.com/report?username='+username+'&password='+hashedPassword+'&location='+location+'&ip='+ip+'&port='+str(listen_port)+'&enc=0')	#Object which represents the HTTP request we are making
+			
+			loginResponse = urllib2.urlopen(loginRequest,timeout=10)#Returns a response object for the requested URL
+			loginData = loginResponse.read() #The response is a file-like object, so .read() can be called on it
+			
+			
+			print ('Server login report: '+loginData)
+			
+			
+			if(loginData[0]=='0'):
+				onlineUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/getList?username='+username+'&password='+hashedPassword+'&enc=0&json=1')
+				onlineUsersResponse = urllib2.urlopen(onlineUsersRequest,timeout=5)
+				onlineUsersData = onlineUsersResponse.read()
+				
+				self.updateAllUsersTable(onlineUsersData)
+				
+			
+			
+			if (loginData[0] == "0") :
+				return 0
+			else:
+				return 1
+		except:
+			print 'Login Report To Server Failed'
+			return 1
+				
+	@cherrypy.expose
+	@cherrypy.tools.json_in()	
+	def retrieveMessages(self):
+		try:
+			input = cherrypy.request.json
+			if(not('requestor' in input)):
+				return '1: Missing Compulsory Field'
+			elif((input['requestor'])==None)or((input['requestor'])==''):	
+				return '1: Missing Compulsory Field'
+			requestor = input['requestor']	
+			messagesForRequestor = self.getMessagesForOneUser(requestor)
+			for message in messagesForRequestor:
+				stamp = ((message[4]).encode('utf-8'))
+				
+				if (message[6]=='false'):#send message
+					self.sendMessage(message[1], message[2], message[3],message[5],float(stamp))
+				elif (message[6]=='true'):
+					fileName = message[7]
+								
+			return '0: Success'
+		except:
+			return 'Error: Something Went Wrong'#client unavailable?	
 		
-		#print onlineUsersData
-			#cherrypy.session['onlineUsersData'] = onlineUsersData;
-		#self.setupDatabase()
-		#self.populateAllUsersTable()
-		#self.getClientProfile()
+	@cherrypy.expose
+	def setUserStatus(self,userStatus = 'Online'):
+		try:
 		
-		#self.insertIntoMessagesTable('smoh944', 'abha808', 'testingadil', float(time.time()), '0','false', None)
+		except:
+	
+	@cherrypy.expose
+	def getStatus()	
+	
+	@cherrypy.expose
+	def requestOfflineMessages(self):
+		try:
+			username = cherrypy.session['username']
+			hashedPassword = cherrypy.session['hashedPassword']
+			
+			onlineUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/getList?username='+username+'&password='+hashedPassword+'&enc=0&json=1')
+			onlineUsersResponse = urllib2.urlopen(onlineUsersRequest,timeout=5)
+			onlineUsersData = onlineUsersResponse.read()
+			onlineUsersData = json.loads(onlineUsersData)
+			
+			output_dict = {'requestor':username}
+			data = json.dumps(output_dict) #data is a JSON object
+			
+			for value in onlineUsersData.itervalues():
+				try:
+					userToRequest = value['username']
+					destinationUserData = self.getUserData(userToRequest)
+					ip = destinationUserData[2]
+					port = destinationUserData[5]
+					
+					request = urllib2.Request('http://'+ ip + ':' + port + '/retrieveMessages', data, {'Content-Type':'application/json'})
+					response = urllib2.urlopen(request,timeout=5)
+					print('offline messages request response: '+response.read())
+				except:
+					pass
+			
+			
+		except:
+			print('Error trying to retrieve Offline Messages')
 		
-		#self.sendMessage()
-		#self.sendFile()
-		if (loginData[0] == "0") :
-			return 0
-		else:
-		    return 1
-
+	
 	@cherrypy.expose
 	@cherrypy.tools.json_in()
 	def receiveMessage(self):
@@ -622,29 +726,31 @@ class MainApp(object):
 		try:
 			input_data = cherrypy.request.json
 			print input_data
-			#return '0: '
+			
 			if(not('sender' in input_data))or(not('destination' in input_data))or(not('message' in input_data))or(not('stamp' in input_data)):
 				return '1: Missing Compulsory Field' ####WHAT  IF ONE OF THESE FIELDS IS EMPTY?
-			markDown='0'
-			if ('markdown' in input_data):
-				if ((str(input_data['markdown'])) == '1'):
-					print 'receiveMessageTest1'
-					message = markdown.markdown(input_data['message'])
-					print 'receiveMessageTesta'
-				else:
-					print 'receiveMessageTest2'
-					message = input_data['message'] 
-			else:
-				print 'receiveMessageTest3'
-				message = input_data['message'] 
-			print 'receiveMessageTest'
+			
 			if('encryption' in input_data):
 				if (not(str(input_data['encryption']) == '0')):
 					#encryption = input_data['encryption']
 				#else:
-					return '9: Encryption Standard Not Supported' 	
-				
-			print input_data
+					return '9: Encryption Standard Not Supported' 
+			
+			markDown='0'
+			if ('markdown' in input_data):
+				if ((str(input_data['markdown'])) == '1'):
+					#print 'receiveMessageTest1'
+					message = markdown.markdown(input_data['message'])
+					#print 'receiveMessageTesta'
+				else:
+					#print 'receiveMessageTest2'
+					message = input_data['message'] 
+			else:
+				#print 'receiveMessageTest3'
+				message = input_data['message'] 
+			#print 'receiveMessageTest'
+							
+			#print input_data
 			self.insertIntoMessagesTable(input_data['sender'], input_data['destination'], message, input_data['stamp'], markDown,'false', None,None)
 			return ('0: Success')
 		except Exception as e: 
@@ -652,16 +758,16 @@ class MainApp(object):
 			return ('Error: Something went wrong')
 		
 	@cherrypy.expose
-	#def sendMessage(self, sender='smoh944', destination='abha808', message='Hello This is a Test',ip='172.24.26.17',port='10001',markdown='0',encoding='0',encryption='0', hashing = '0', hashedMessage = '', decryptionKey='0'):
-	def sendMessage(self, sender=None, destination=None, message='Default Message',markDown='0',encryption=0, hashing = 0, hashedMessage = None, decryptionKey=None):	
+	def sendMessage(self, sender=None, destination=None, message='Default Message',markDown='0',stamp=None,encryption=0, hashing = 0, hashedMessage = None, decryptionKey=None):	
 		try:	
 			if ((message == None)or(message == '')):
 				raise cherrypy.HTTPRedirect('/openMessagingPage?destination='+destination)
 			destinationUserData = self.getUserData(destination)
 			ip = destinationUserData[2]
 			port = destinationUserData[5]
-			#print destination	
-			output_dict = {'sender':sender,'destination':destination,'message':message, 'stamp':float(time.time()), 'markdown':int(markDown), 'encryption':encryption, 'hashing':hashing, 'hash': hashedMessage, 'decryptionKey':decryptionKey}
+			if (stamp == None)or(stamp== ''):
+				stamp = float(time.time())
+			output_dict = {'sender':sender,'destination':destination,'message':message, 'stamp':stamp, 'markdown':int(markDown), 'encryption':encryption, 'hashing':hashing, 'hash': hashedMessage, 'decryptionKey':decryptionKey}
 			data = json.dumps(output_dict) #data is a JSON object
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveMessage', data, {'Content-Type':'application/json'})
 			response = urllib2.urlopen(request,timeout=5)
@@ -680,29 +786,12 @@ class MainApp(object):
 	WEB_ROOT = os.path.join(os.getcwd(), 'public') 
 
 	cherrypy.config.update({'error_page.404': default,'server.socket_host': '127.0.0.1','server.socket_port': 10001,'engine.autoreload.on': True,'tools.sessions.on': True,'tools.encode.on': True,'tools.encode.encoding': 'utf-8','tools.staticdir.on' : True,	'tools.staticdir.dir' : WEB_ROOT,'tools.staticdir.index' : 'login.html'})
-          
+	
+	
+	
 def runMainApp():
-	"""
-	config = {
-		 '/': {
-		     'tools.sessions.on': True,#enabling sessions
-		     'tools.staticdir.root': os.path.abspath(os.getcwd()),#gets the absolute path to this folder
-			 'tools.staticdir.on': True, #enabling a static directory which will serve static content to all of my webpages
-		     'tools.staticdir.dir': './public'#static directory maps into public folder
-			
-		 },
-		 '/generator': {
-		     'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
-		     'tools.response_headers.on': True,
-		     'tools.response_headers.headers': [('Content-Type', 'text/plain')],
-		 }#,
-		 #'/static': {	 
-		     #'tools.staticdir.on': True, #enabling a static directory which will serve static content to all of my webpages
-		     #'tools.staticdir.dir': './public'#static directory maps into public folder
-		 #}
-	}
-	""" 
-	#print os.path.abspath(os.getcwd())
+	
+	
     # Create an instance of MainApp and tell Cherrypy to send all requests under / to it. 
 	cherrypy.tree.mount(MainApp(), "/")
 
@@ -716,7 +805,7 @@ def runMainApp():
 	print "University of Auckland"
 	print "COMPSYS302 - Software Design Application"
 	print "========================================"                       
-
+	
 	# Start the web server
 	cherrypy.engine.start()
 	

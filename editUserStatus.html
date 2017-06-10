@@ -2,11 +2,11 @@
 <html >
 <head>
   <meta charset="UTF-8">
-  <title>User List</title>
+  <title>Edit User Status</title>
   
   
   
-      <link rel="stylesheet" href="css/usersPageStyle.css">
+      <link rel="stylesheet" href="css/editUserStatusStyle.css">
 
   
 </head>
@@ -17,19 +17,14 @@
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewProfilePage'">View My Profile</button></div>
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/editProfile'">Edit My Profile</button></div>
   <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/signout'">Log Out</button></div>
-  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/signout'">Set User Status</button></div>
 </div>
-<h1 style="text-align:center">Welcome {username:}<br>COMPSYS 302 CHAT USER LIST- Click on a User to Message</h1>
+<h1 style="text-align:center">{profileHeading:} PROFILE</h1>
+
 <div class="ui">
+  <img src="{image:}" alt="Profile Picture 380x420" height="420" width="380">
   
-  
-  <div class="userList">
-	{userList:}
-    
-    
-    
-    
-   </div> 
+  <h1 style="text-align:center">{UPI:}<br><br>NAME: {fullname:}<br><br>POSITION: {position:}<br><br>DESCRIPTION: {description:}<br><br>LOCATION: {location:}</h1>
+ 
   
 </div>
   
