@@ -17,15 +17,18 @@
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewProfilePage'">View My Profile</button></div>
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/editProfile'">Edit My Profile</button></div>
   <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/signout'">Log Out</button></div>
+  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/openSetUserStatusPage'">Set User Status</button></div>
 </div>
-<h1 style="text-align:center">{profileHeading:} PROFILE</h1>
+<h1 style="text-align:center">SELECT YOUR USER STATUS</h1>
 
 <div class="ui">
-  <img src="{image:}" alt="Profile Picture 380x420" height="420" width="380">
-  
-  <h1 style="text-align:center">{UPI:}<br><br>NAME: {fullname:}<br><br>POSITION: {position:}<br><br>DESCRIPTION: {description:}<br><br>LOCATION: {location:}</h1>
- 
-  
+  <div id="outer">
+	<div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/setUserStatus?userStatus=Online'" >Online</button></div>
+	<div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/setUserStatus?userStatus=Offline'">Offline</button></div>
+	<div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/setUserStatus?userStatus=Idle'">Idle</button></div>
+	<div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/setUserStatus?userStatus=Away'">Away</button></div>
+	<div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/setUserStatus?userStatus=Do Not Disturb'">Do Not Disturb</button></div>
+  </div>
 </div>
   
   

@@ -208,6 +208,7 @@ class MainApp(object):
 		
 		conn = sqlite3.connect(DB_USER_DATA)
 		c = conn.cursor()
+		c.execute("UPDATE AllUsers SET status = 'Offline'")
 		for UPI in serversUsersList:		
 			c.execute("INSERT INTO AllUsers (username) SELECT ? WHERE NOT EXISTS (SELECT * FROM AllUsers WHERE username = ?)", (UPI,UPI))
 		
@@ -221,10 +222,29 @@ class MainApp(object):
 		
 		conn = sqlite3.connect(DB_USER_DATA)
 		c = conn.cursor()
-		c.execute("UPDATE AllUsers SET status = 'Logged Off'")
+		#c.execute("UPDATE AllUsers SET status = 'Logged Off'")
 		for value in onlineUsersData.itervalues():
-		
-			c.execute('''UPDATE AllUsers SET ip = ? , location = ?, lastLogin = ?, port = ?, status = 'Logged On' WHERE username = ?''', (value['ip'], value['location'], value['lastLogin'], value['port'], value['username']))
+			try:				
+				userData = self.getUserData(value['username'])	#############################
+				ip = userData[2]
+				port = userData[5]
+				output_dict = {'profile_username':value['username']}
+				data = json.dumps(output_dict) #data is a JSON object
+				request = urllib2.Request('http://'+ ip + ':' + port + '/getStatus' , data, {'Content-Type':'application/json'})				
+				response = urllib2.urlopen(request,timeout=1).read()				
+				responseDict = json.loads(response)				
+				status = str(responseDict['status'])				
+				print ('requesting user status for '+value['username'])
+			except:
+				status = 'Online'
+				
+			
+				
+				
+			
+			
+			
+			c.execute('''UPDATE AllUsers SET ip = ? , location = ?, lastLogin = ?, port = ?, status = ? WHERE username = ?''', (value['ip'], value['location'], value['lastLogin'], value['port'], status, value['username']))
 			try:
 				c.execute('''UPDATE AllUsers SET publicKey = ? WHERE username = ?''',(value['publicKey'], value['username']))
 			except:
@@ -308,8 +328,8 @@ class MainApp(object):
 				lastLogin = (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(destinationUserData[4]))))
 			else:
 				lastLogin = ''
-			destinationUserDetails = destination+'	'+'Last Login: '+lastLogin
-			#userConversation = '<li class="i"> <div class="head"> <span class="time">10:13 AM, Today</span> <span class="name">You</span> </div> <div class="message">Initial</div>  </li>'
+			destinationUserDetails = destination+'	'+'Last Login:'+lastLogin+' '+destinationUserData[6]
+			
 			userConversation = ''
 			for message in messages:
 				if (str(message[5])=='1'):
@@ -325,7 +345,7 @@ class MainApp(object):
 			return Page
 		except:
 			pass
-		
+		raise cherrypy.HTTPRedirect('/login') #redirect back to login page
 		
 	@cherrypy.expose
 	def openUsersListPage(self):
@@ -336,7 +356,7 @@ class MainApp(object):
 			for user in usersData:
 				#print user[1]
 				userDetails += ('''<div class="user"><button type="submit" class="msgBtn2" onclick="window.location.href='/openMessagingPage?destination='''+user[1]+''''">'''+user[1]+'''---'''+user[6]+'''</button><button type=submit class="msgBtn3" onclick="window.location.href='/viewProfilePage?username='''+user[1]+''''">View Profile</button></div>''')	
-			Page = open('usersPage.html').read().format(userList = userDetails,username=client)
+			Page = open('usersPage.html').read().format(userList = userDetails,username=client,userstatus=cherrypy.session['userStatus'])
 			return Page
 		except:	
 			raise cherrypy.HTTPRedirect('/login') #redirect back to login page
@@ -363,10 +383,10 @@ class MainApp(object):
 					ip = userData[2]
 					port = userData[5]
 					
-					print'testProfilePage3'
+					#print'testProfilePage3'
 					output_dict = {'sender':client,'profile_username':username}
-					print output_dict
-					print'testProfilePage3'
+					#print output_dict
+					#print'testProfilePage3'
 					data = json.dumps(output_dict) #data is a JSON object
 					
 					request = urllib2.Request('http://'+ ip + ':' + port + '/getProfile' , data, {'Content-Type':'application/json'})
@@ -374,11 +394,11 @@ class MainApp(object):
 					response = urllib2.urlopen(request,timeout=5).read()
 					
 					responseDict = (json.loads(response))
-					print responseDict
+					#print responseDict
 					Page = open('viewProfile.html').read().format(profileHeading = 'USER',UPI = username,fullname=responseDict['fullname'],position=responseDict['position'],description=responseDict['description'],location=responseDict['location'],image=responseDict['picture'])
 					return Page
 			except:
-				print'testProfilePage'
+				#print'testProfilePage'
 				Page = open('viewProfile.html').read().format(profileHeading = 'No data available for USER',UPI = username,fullname='',position='',description='',location='',image='')
 				return Page
 				#raise cherrypy.HTTPRedirect('/openUsersListPage')
@@ -423,7 +443,7 @@ class MainApp(object):
 		try:
 			input_data = cherrypy.request.json
 			
-			if(not('sender' in input_data))or(not('destination' in input_data))or(not('file' in input_data))or(not('stamp' in input_data)or(not('filename' in input_data))or(not('content_type' in input_data)):
+			if(not('sender' in input_data))or(not('destination' in input_data))or(not('file' in input_data))or(not('stamp' in input_data)or(not('filename' in input_data))or(not('content_type' in input_data))):
 				return '1: Missing Compulsory Field' ####WHAT  IF ONE OF THESE FIELDS IS EMPTY?
 			
 			if('encryption' in input_data):
@@ -441,9 +461,9 @@ class MainApp(object):
 			fileName = input_data['filename']
 						
 			if 'image/' in input_data['content_type']:
-				fileMessage = '<img src="receivedFiles/'+fileName+'" alt= Picture 250x200 height="200" width="250">'	
+				fileMessage = '<img src="receivedFiles/'+fileName+'" alt= Picture 380x320 height="320" width="380">'	
 			elif 'video/' in input_data['content_type']:
-				fileMessage = '<video width="250" height="200" controls><source src="'+'receivedFiles/'+fileName+'">Your browser does not support the video tag.</video>'
+				fileMessage = '<video width="380" height="320" controls><source src="'+'receivedFiles/'+fileName+'">Your browser does not support the video tag.</video>'
 			elif 'audio/' in input_data['content_type']:
 				fileMessage = '<audio controls> <source src="'+'receivedFiles/'+fileName+'">Your browser does not support the audio element.</audio>'
 			else:
@@ -479,9 +499,10 @@ class MainApp(object):
 			data = json.dumps(output_dict) #data is a JSON object
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveFile' , data, {'Content-Type':'application/json'})
 			response = urllib2.urlopen(request,timeout=5)
-			print ('file send response: '+response.read())
+			sendResponse = response.read()
+			print ('file send response: '+sendResponse)
 			if 'image/' in content_type:
-				print 'imagetest'
+				
 				fileMessage = '<img src="receivedFiles/'+fileName+'" alt= "Picture 380x320" height="320" width="380">'	
 				
 			elif 'video/' in content_type:
@@ -493,10 +514,13 @@ class MainApp(object):
 			
 			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], fileMessage, output_dict['stamp'], '0','true', fileName, content_type)
 			
-			saveFile = open('public/receivedFiles/'+fileName,'wb')
-			saveFile.write((output_dict['file']).decode('base64'))
-			saveFile.close
-			
+			if (str(sendResponse[0]) == '0')or(str(sendResponse[1]) == '0'):
+				
+				saveFile = open('public/receivedFiles/'+fileName,'wb')
+				saveFile.write((output_dict['file']).decode('base64'))
+				saveFile.close
+			else:	
+				print 'file send confirmation not received'
 		except:
 			print 'file send error'
 			if(sender==None)or(destination==None):
@@ -531,6 +555,7 @@ class MainApp(object):
 		if (error == 0):
 			cherrypy.session['username'] = username;
 			cherrypy.session['hashedPassword'] = hashOfPasswordPlusSalt;
+			cherrypy.session['userStatus'] = 'Online'
 			self.currentUser = cherrypy.session['username']
 			self.currentUserHashedPassword = cherrypy.session['hashedPassword']
 			self.openUsersListPage()############################################################################################################################
@@ -584,7 +609,7 @@ class MainApp(object):
         
 	def serverReportThreading(self,username,hashedPassword):
 		thread.start_new_thread(self.serverReportTimer, (username,hashedPassword))
-		#thread.exit()
+		
 		
 	def serverReportTimer(self,username,hashedPassword):
 		beginTime=time.time()
@@ -677,15 +702,46 @@ class MainApp(object):
 			return '0: Success'
 		except:
 			return 'Error: Something Went Wrong'#client unavailable?	
-		
+	
+	@cherrypy.expose
+	def openSetUserStatusPage(self):
+		try:
+			username = cherrypy.session['username']
+			Page = open('editUserStatus.html')
+			return Page
+		except:
+			pass
+		raise cherrypy.HTTPRedirect('/openUsersListPage')
+	
 	@cherrypy.expose
 	def setUserStatus(self,userStatus = 'Online'):
 		try:
-		
+			cherrypy.session['userStatus'] = userStatus
+			conn = sqlite3.connect(DB_USER_DATA)
+			c = conn.cursor()
+			c.execute('''UPDATE AllUsers SET status = ? WHERE username = ?''',(userStatus, cherrypy.session['username']))
+			conn.commit() # commit actions to the database
+			conn.close()	
+			
 		except:
+			pass
+		raise cherrypy.HTTPRedirect('/openUsersListPage')
+
+		
 	
 	@cherrypy.expose
-	def getStatus()	
+	@cherrypy.tools.json_in()
+	def getStatus(self):	
+		try:
+			input = cherrypy.request.json
+			if(not('profile_username' in input)):				
+				return '1: Missing Compulsory Field'
+			userStatus = self.getUserData(input['profile_username'])
+			
+			outputDict = {'status':userStatus[6]}
+			return json.dumps(outputDict)
+		except:
+			return '3: Client Currently Unavailable'
 	
 	@cherrypy.expose
 	def requestOfflineMessages(self):
@@ -704,13 +760,16 @@ class MainApp(object):
 			for value in onlineUsersData.itervalues():
 				try:
 					userToRequest = value['username']
-					destinationUserData = self.getUserData(userToRequest)
-					ip = destinationUserData[2]
-					port = destinationUserData[5]
-					
-					request = urllib2.Request('http://'+ ip + ':' + port + '/retrieveMessages', data, {'Content-Type':'application/json'})
-					response = urllib2.urlopen(request,timeout=5)
-					print('offline messages request response: '+response.read())
+					if (not(userToRequest == username)):
+						destinationUserData = self.getUserData(userToRequest)
+						ip = destinationUserData[2]
+						port = destinationUserData[5]
+						
+						request = urllib2.Request('http://'+ ip + ':' + port + '/retrieveMessages', data, {'Content-Type':'application/json'})
+						response = urllib2.urlopen(request,timeout=1)
+						print('offline messages request response: '+response.read())
+						
+							
 				except:
 					pass
 			
@@ -741,6 +800,7 @@ class MainApp(object):
 				if ((str(input_data['markdown'])) == '1'):
 					#print 'receiveMessageTest1'
 					message = markdown.markdown(input_data['message'])
+					markDown = '1'
 					#print 'receiveMessageTesta'
 				else:
 					#print 'receiveMessageTest2'
@@ -763,17 +823,23 @@ class MainApp(object):
 			if ((message == None)or(message == '')):
 				raise cherrypy.HTTPRedirect('/openMessagingPage?destination='+destination)
 			destinationUserData = self.getUserData(destination)
+			
 			ip = destinationUserData[2]
 			port = destinationUserData[5]
+			
 			if (stamp == None)or(stamp== ''):
 				stamp = float(time.time())
 			output_dict = {'sender':sender,'destination':destination,'message':message, 'stamp':stamp, 'markdown':int(markDown), 'encryption':encryption, 'hashing':hashing, 'hash': hashedMessage, 'decryptionKey':decryptionKey}
 			data = json.dumps(output_dict) #data is a JSON object
+			
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveMessage', data, {'Content-Type':'application/json'})
 			response = urllib2.urlopen(request,timeout=5)
-			print 'sendMessageTest'
+			#print 'sendMessageTest'
+			if (str(markDown)=='1'):
+				message = markdown.markdown(output_dict['message'])
 			
-			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], output_dict['message'], output_dict['stamp'], int(markDown),'false', None,None)
+			
+			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], message, output_dict['stamp'], int(markDown),'false', None,None)
 			print response.read()
 		except Exception as e: 
 			print e
@@ -783,9 +849,9 @@ class MainApp(object):
 		#redirect back to messaging page
 		raise cherrypy.HTTPRedirect('/openMessagingPage?destination='+destination)	
 		
-	WEB_ROOT = os.path.join(os.getcwd(), 'public') 
+	#WEB_ROOT = os.path.join(os.getcwd(), 'public') 
 
-	cherrypy.config.update({'error_page.404': default,'server.socket_host': '127.0.0.1','server.socket_port': 10001,'engine.autoreload.on': True,'tools.sessions.on': True,'tools.encode.on': True,'tools.encode.encoding': 'utf-8','tools.staticdir.on' : True,	'tools.staticdir.dir' : WEB_ROOT,'tools.staticdir.index' : 'login.html'})
+	cherrypy.config.update({'error_page.404': default,'server.socket_host': '127.0.0.1','server.socket_port': 10001,'engine.autoreload.on': True,'tools.sessions.on': True,'tools.encode.on': True,'tools.encode.encoding': 'utf-8','tools.staticdir.on' : True,	'tools.staticdir.dir' : os.path.join(os.getcwd(), 'public'),'tools.staticdir.index' : 'login.html'})
 	
 	
 	

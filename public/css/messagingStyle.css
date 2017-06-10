@@ -59,7 +59,7 @@ body {
 
 .ui {
   margin: 10px auto;
-  width: 1300px;
+  width: 1350px;
   height: 900px;
   background-color: #fff;
   border-radius: 3px;
@@ -212,17 +212,4 @@ body {
   content: '';
   clear: both;
 }
-/*
-.ui .send {
-  color: #7ac5ef;
-  
-  font-weight: 700;
-  float: right;
-  margin-right: 5%;
-  cursor: pointer;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
-}
-*/
+
