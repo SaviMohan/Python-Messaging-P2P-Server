@@ -1,6 +1,10 @@
 What is this repository for?
 This repository holds my python project
-INSTRUCTIONS - First clone/download this repo from bitbucket - Next open up the Terminal in linux and go into the downloaded repo - To run the project type in "python MainFile.py"
+INSTRUCTIONS - First clone/download this repo from bitbucket - Next open up the Terminal in linux and go into the downloaded repo - To run the project type in "python MainFile.py" then open up a (preferrably Chrome) browser in incognito mode. Then type "127.0.0.1:10001" and press enter. it should then open up the login page.
+
+To test multiple sessions on another computer, type into that computer's browser "ip:10001" with ip = this computer's ip address. The console usually prints out the ip address quite regularly
+
+
 
 
 Final Report - My final report submission is in the root directory of this repo in PDF form  
@@ -14,4 +18,3 @@ If something goes wrong, shutdown the process, try deleting the database file an
 *****************************************************************************************************************
 All inter-app features that I did are supported by abha808 & myep112 
 **************************************************************************************************
-  
