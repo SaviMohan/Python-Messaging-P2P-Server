@@ -85,7 +85,7 @@ def createRequestRateTable():
 	conn.close()	
 
 def createClientProfilesTable():
-	"""Creates a table to store user profile details"""
+	"""Creates a table to store user profile details. This table also allows us to support multiple user sessions on the same application"""
 	conn = sqlite3.connect(DB_USER_DATA)
 			
 	# Once we have a Connection, we can create a Cursor object and call its execute() method to perform SQL commands
@@ -130,28 +130,7 @@ def getUserData(username=''):
 	conn.close()		
 	return userData	
 
-@cherrypy.expose
-def updateClientProfileDetails(username=None, fullname=None, position=None, description=None, location=None, picture=None):
-	"""Updates a row of the ClientProfiles tables which has a username value that corresponds to an input username value """
-	
-	conn = sqlite3.connect(DB_USER_DATA)
-	c = conn.cursor()
-	
-	if not((fullname == "")or(fullname==None)):#As long as the input values are not empty, insert them into the database
-		c.execute('''UPDATE ClientProfiles SET fullname = ? WHERE profile_username = ?''',(fullname, username))	
-	if not((position == "")or(position==None)):
-		c.execute('''UPDATE ClientProfiles SET position = ? WHERE profile_username = ?''',(position, username))	
-	if not((description == "")or(description==None)):
-		c.execute('''UPDATE ClientProfiles SET description = ? WHERE profile_username = ?''',(description, username))	
-	if not((location == "")or(location==None)):
-		c.execute('''UPDATE ClientProfiles SET location = ? WHERE profile_username = ?''',(location, username))	
-	if not((picture == "")or(picture==None)):
-		c.execute('''UPDATE ClientProfiles SET picture = ? WHERE profile_username = ?''',(picture, username))	
-	
-	conn.commit()
-	conn.close()
-	
-	raise cherrypy.HTTPRedirect('/') #redirect back to the index
+
 	
 
 def createMessagesTable():

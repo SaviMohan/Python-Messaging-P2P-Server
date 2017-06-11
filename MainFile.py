@@ -66,6 +66,29 @@ class MainApp(object):
 			print('The IP of this client is: '+str(externalIP))
 			return str(externalIP)
 	
+	@cherrypy.expose
+	def updateClientProfileDetails(self,username=None, fullname=None, position=None, description=None, location=None, picture=None):
+		"""Updates a row of the ClientProfiles tables which has a username value that corresponds to an input username value """
+		
+		conn = sqlite3.connect(DB_USER_DATA)
+		c = conn.cursor()
+		
+		if not((fullname == "")or(fullname==None)):#As long as the input values are not empty, insert them into the database
+			c.execute('''UPDATE ClientProfiles SET fullname = ? WHERE profile_username = ?''',(fullname, username))	
+		if not((position == "")or(position==None)):
+			c.execute('''UPDATE ClientProfiles SET position = ? WHERE profile_username = ?''',(position, username))	
+		if not((description == "")or(description==None)):
+			c.execute('''UPDATE ClientProfiles SET description = ? WHERE profile_username = ?''',(description, username))	
+		if not((location == "")or(location==None)):
+			c.execute('''UPDATE ClientProfiles SET location = ? WHERE profile_username = ?''',(location, username))	
+		if not((picture == "")or(picture==None)):
+			c.execute('''UPDATE ClientProfiles SET picture = ? WHERE profile_username = ?''',(picture, username))	
+		
+		conn.commit()
+		conn.close()
+		
+		raise cherrypy.HTTPRedirect('/') #redirect back to the index
+	
 	#Initialise all the tables on startup
 	dbFunctions.createAllUsersTable()
 	dbFunctions.createMessagesTable()
