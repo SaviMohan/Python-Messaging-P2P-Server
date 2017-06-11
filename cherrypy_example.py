@@ -14,7 +14,7 @@
 listen_ip = "0.0.0.0"
 listen_port = 10001
 SALT = "COMPSYS302-2017"
-DB_USER_DATA = "relationalDatabase.db"
+DB_USER_DATA = "sqliteDatabase.db"
 
 
 import cherrypy
@@ -72,34 +72,47 @@ class MainApp(object):
 		conn.close()
 		
 	
-	def checkIfRateLimited(self,requestor=None,IP= None):
+	def checkIfRateLimited(self,requestor=None):
 		rateLimited = False
+		
+		try:
+			if (requestor == cherrypy.session['username']): #Don't ratelimit the session user
+				return rateLimited
+		except:
+			pass
+			
 		conn = sqlite3.connect(DB_USER_DATA)			
 		# Once we have a Connection, we can create a Cursor object and call its execute() method to perform SQL commands
 		c = conn.cursor()
-		c.execute('SELECT * FROM RequestRate WHERE (requestor=? )', (requestor,))
-		data = c.fetchone()
+		
+		try:
+			
+			if(not(requestor == None)):
+				c.execute('SELECT * FROM RequestRate WHERE (requestor=? )', (requestor,))
+				data = c.fetchone()
 
-		
-		if data is None:			
-			c.execute('INSERT INTO RequestRate (requestor,requestsNumber) VALUES (?,?)', (requestor,1))
-		else:
-			c.execute('''UPDATE RequestRate SET requestsNumber = ? WHERE requestor = ?''',(data[2]+1, requestor))	
-			if(data[2]>8):
-				rateLimited = True
-		
-		
-		
-		c.execute('SELECT * FROM RequestRate WHERE (requestor=? )', (IP,))
-		IPdata = c.fetchone()
+				
+				if data is None:			
+					c.execute('INSERT INTO RequestRate (requestor,requestsNumber) VALUES (?,?)', (requestor,1))
+				else:
+					c.execute('''UPDATE RequestRate SET requestsNumber = ? WHERE requestor = ?''',(data[2]+1, requestor))	
+					if(data[2]>8):
+						rateLimited = True
+		except:
+			pass
+		"""
+		if(not(IP == None)):
+			c.execute('SELECT * FROM RequestRate WHERE (requestor=? )', (IP,))
+			IPdata = c.fetchone()
 
-		
-		if IPdata is None:			
-			c.execute('INSERT INTO RequestRate (requestor,requestsNumber) VALUES (?,?)', (IP,1))
-		else:
-			c.execute('''UPDATE RequestRate SET requestsNumber = ? WHERE requestor = ?''',(IPdata[2]+1, IP))	
-			if(IPdata[2]>8):
-				rateLimited = True
+			
+			if IPdata is None:			
+				c.execute('INSERT INTO RequestRate (requestor,requestsNumber) VALUES (?,?)', (IP,1))
+			else:
+				c.execute('''UPDATE RequestRate SET requestsNumber = ? WHERE requestor = ?''',(IPdata[2]+1, IP))	
+				if(IPdata[2]>8):
+					rateLimited = True
+		"""
 		conn.commit()
 		conn.close()
 
@@ -120,9 +133,7 @@ class MainApp(object):
 	
 	def createClientProfilesTable():
 		conn = sqlite3.connect(DB_USER_DATA)
-		
-		
-		
+				
 		# Once we have a Connection, we can create a Cursor object and call its execute() method to perform SQL commands
 		c = conn.cursor()
 		
@@ -273,40 +284,48 @@ class MainApp(object):
 		
 
 		
-	def updateAllUsersTable(self, onlineUsersData):
+	def updateAllUsersTable(self, onlineUsersData, firstLogin = False):
 		onlineUsersData = json.loads(onlineUsersData)
 		
-		conn = sqlite3.connect(DB_USER_DATA)
-		c = conn.cursor()
+		#conn = sqlite3.connect(DB_USER_DATA)
+		#c = conn.cursor()
 		#c.execute("UPDATE AllUsers SET status = 'Logged Off'")
+		print 'requesting status data from other online users'
 		for value in onlineUsersData.itervalues():
-			try:				
-				userData = self.getUserData(value['username'])	#############################
-				ip = userData[2]
-				port = userData[5]
-				output_dict = {'profile_username':value['username']}
-				data = json.dumps(output_dict) #data is a JSON object
-				request = urllib2.Request('http://'+ ip + ':' + port + '/getStatus' , data, {'Content-Type':'application/json'})				
-				response = urllib2.urlopen(request,timeout=1).read()				
-				responseDict = json.loads(response)				
-				status = str(responseDict['status'])				
-				print ('requesting user status for '+value['username'])
-			except:
+			if(firstLogin == False):	
+				try:				
+					userData = self.getUserData(value['username'])	#############################
+					ip = userData[2]
+					port = userData[5]
+					output_dict = {'profile_username':value['username']}
+					data = json.dumps(output_dict) #data is a JSON object
+					request = urllib2.Request('http://'+ ip + ':' + port + '/getStatus' , data, {'Content-Type':'application/json'})				
+					response = urllib2.urlopen(request,timeout=1).read()				
+					responseDict = json.loads(response)				
+					status = str(responseDict['status'])				
+					print ('requesting user status for '+value['username'])
+				except:
+					status = 'Online'
+			else:
 				status = 'Online'
-				
 			
-				
-				
+			conn = sqlite3.connect(DB_USER_DATA)
+			c = conn.cursor()
+			try:
+				c.execute('''UPDATE AllUsers SET ip = ? , location = ?, lastLogin = ?, port = ?, status = ? WHERE username = ?''', (value['ip'], value['location'], value['lastLogin'], value['port'], status, value['username']))
+			except:
+				pass
 			
-			
-			
-			c.execute('''UPDATE AllUsers SET ip = ? , location = ?, lastLogin = ?, port = ?, status = ? WHERE username = ?''', (value['ip'], value['location'], value['lastLogin'], value['port'], status, value['username']))
 			try:
 				c.execute('''UPDATE AllUsers SET publicKey = ? WHERE username = ?''',(value['publicKey'], value['username']))
 			except:
 				pass
-		conn.commit() # commit actions to the database
-		conn.close()
+			
+			conn.commit() # commit actions to the database
+			conn.close()	
+				
+		#conn.commit() # commit actions to the database
+		#conn.close()
 		
 	def getAllUsersData(self):
 		conn = sqlite3.connect(DB_USER_DATA)
@@ -343,49 +362,43 @@ class MainApp(object):
 	# PAGES (which return HTML that can be viewed in browser)
 	@cherrypy.expose
 	def index(self):
-		#Page = "Welcome! This is a test website for COMPSYS302!<br/>"
+		
 		
 		try:
-			if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
-				return '11: Blacklisted or Rate Limited'
+			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
+				#return '11: Blacklisted or Rate Limited'
 				
 			username = cherrypy.session['username'] 
 			raise cherrypy.HTTPRedirect('/openUsersListPage')
-			#Page += "Hello " + cherrypy.session['username'] + "!<br/>"
-			#Page += "Here is some bonus text because you've logged in!"
 			
-			#Page += "Click here to <a href='editProfile'>Edit Profile</a>."
-			
-			#Page += '<form action="/openMessagingPage?destination=abha808" method="post" enctype="multipart/form-data">'
-			#Page += '<input type="submit" value="List of online users"/></form>'
 		except KeyError: #There is no username
 		    raise cherrypy.HTTPRedirect('/login')
-		    #Page += "Click here to <a href='login'>login</a>."
+		    
 		return Page
 	
 	@cherrypy.expose
 	def listAPI(self):
-		if(self.checkIfRateLimited(username,cherrypy.request.remote.ip)):
-			return '11: Blacklisted or Rate Limited'		
+		#if(self.checkIfRateLimited(username,cherrypy.request.remote.ip)):
+			#return '11: Blacklisted or Rate Limited'		
 		return '/receiveMessage [sender] [destination] [message] [stamp] [markdown(opt)] [markdown(opt)] [encoding(opt)] [encryption(opt)] [hashing(opt)] [hash(opt)] [decryptionKey(opt)] Encoding <>  Encryption <>  Hashing <>'
         
 	@cherrypy.expose
 	def login(self):
 		try:
-			if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
-				return '11: Blacklisted or Rate Limited'
+			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
+				#return '11: Blacklisted or Rate Limited'
 			
 			Page = open('login.html').read().format(statusText = cherrypy.session['loginStatusText'])
 		except:
 			Page = open('login.html').read().format(statusText = 'Enter your Username and Password')	
-		#Page = open('usersPage.html')
+		
 		return Page
 	
 	@cherrypy.expose
 	def openMessagingPage(self,destination=None):
 		try:
-			if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
-				return '11: Blacklisted or Rate Limited'
+			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
+				#return '11: Blacklisted or Rate Limited'
 			
 			client = cherrypy.session['username']
 			destinationUserData = self.getUserData(destination)
@@ -417,13 +430,13 @@ class MainApp(object):
 	@cherrypy.expose
 	def openUsersListPage(self):
 		try:
-			if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
-				return '11: Blacklisted or Rate Limited'
+			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
+				#return '11: Blacklisted or Rate Limited'
 			client = cherrypy.session['username']	
 			usersData = self.getAllUsersData()
 			userDetails = ''
 			for user in usersData:
-				#print user[1]
+				
 				userDetails += ('''<div class="user"><button type="submit" class="msgBtn2" onclick="window.location.href='/openMessagingPage?destination='''+user[1]+''''">'''+user[1]+'''---'''+user[6]+'''</button><button type=submit class="msgBtn3" onclick="window.location.href='/viewProfilePage?username='''+user[1]+''''">View Profile</button></div>''')	
 			Page = open('usersPage.html').read().format(userList = userDetails,username=client,userstatus=cherrypy.session['userStatus'])
 			return Page
@@ -433,52 +446,51 @@ class MainApp(object):
 	@cherrypy.expose
 	def viewProfilePage(self,username=None):
 		try:
-			if(self.checkIfRateLimited(username,cherrypy.request.remote.ip)):
-				return '11: Blacklisted or Rate Limited'
+			#if(self.checkIfRateLimited(username,cherrypy.request.remote.ip)):
+				#return '11: Blacklisted or Rate Limited'
 			client = cherrypy.session['username']
 		except:
 			raise cherrypy.HTTPRedirect('/login')
-		finally:
-			try:
-				if username == None:
-					#raise cherrypy.HTTPRedirect('/openUsersListPage')
-					username = client
-				if (client == username): #The current logged in user requesting to see their own profile page
-					clientData = self.getClientProfile(client)
-					
-					Page = open('viewProfile.html').read().format(profileHeading = 'MY',UPI = client,fullname=clientData[2],position=clientData[3],description=clientData[4],location=clientData[5],image=clientData[6])
-					return Page
-				else:
-					userData = self.getUserData(username)
-					
-					ip = userData[2]
-					port = userData[5]
-					
-					#print'testProfilePage3'
-					output_dict = {'sender':client,'profile_username':username}
-					#print output_dict
-					#print'testProfilePage3'
-					data = json.dumps(output_dict) #data is a JSON object
-					
-					request = urllib2.Request('http://'+ ip + ':' + port + '/getProfile' , data, {'Content-Type':'application/json'})
-					
-					response = urllib2.urlopen(request,timeout=5).read()
-					
-					responseDict = (json.loads(response))
-					#print responseDict
-					Page = open('viewProfile.html').read().format(profileHeading = 'USER',UPI = username,fullname=responseDict['fullname'],position=responseDict['position'],description=responseDict['description'],location=responseDict['location'],image=responseDict['picture'])
-					return Page
-			except:
-				#print'testProfilePage'
-				Page = open('viewProfile.html').read().format(profileHeading = 'No data available for USER',UPI = username,fullname='',position='',description='',location='',image='')
+		
+		try:
+			if username == None:
+				
+				username = client
+			if (client == username): #The current logged in user requesting to see their own profile page
+				clientData = self.getClientProfile(client)
+				
+				Page = open('viewProfile.html').read().format(profileHeading = 'MY',UPI = client,fullname=clientData[2],position=clientData[3],description=clientData[4],location=clientData[5],image=clientData[6])
 				return Page
-				#raise cherrypy.HTTPRedirect('/openUsersListPage')
+			else:
+				userData = self.getUserData(username)
+				
+				ip = userData[2]
+				port = userData[5]
+				
+				
+				output_dict = {'sender':client,'profile_username':username}
+				
+				data = json.dumps(output_dict) #data is a JSON object
+				
+				request = urllib2.Request('http://'+ ip + ':' + port + '/getProfile' , data, {'Content-Type':'application/json'})
+				
+				response = urllib2.urlopen(request,timeout=5).read()
+				
+				responseDict = (json.loads(response))
+				
+				Page = open('viewProfile.html').read().format(profileHeading = 'USER',UPI = username,fullname=responseDict['fullname'],position=responseDict['position'],description=responseDict['description'],location=responseDict['location'],image=responseDict['picture'])
+				return Page
+		except:
+			
+			Page = open('viewProfile.html').read().format(profileHeading = 'No data available for USER',UPI = username,fullname='',position='',description='',location='',image='')
+			return Page
+			
 		
 	@cherrypy.expose
 	def editProfile(self):#########################
 		try:
-			if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
-				return '11: Blacklisted or Rate Limited'
+			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
+				#return '11: Blacklisted or Rate Limited'
 			
 			Page = open('editProfile.html').read().format(clientUsername=cherrypy.session['username'])	
 			return Page
@@ -490,7 +502,7 @@ class MainApp(object):
     
 	@cherrypy.expose
 	def ping(self, sender=None):
-		if(self.checkIfRateLimited(sender,cherrypy.request.remote.ip)):
+		if(self.checkIfRateLimited(sender)):
 			return '11: Blacklisted or Rate Limited'
 		if (sender ==None):
 			return '1: Missing Compulsory Field'
@@ -505,7 +517,7 @@ class MainApp(object):
 			input = cherrypy.request.json
 			if((not('sender' in input))or(not('profile_username' in input))):
 				return '1: Missing Compulsory Field'
-			if(self.checkIfRateLimited(input['sender'],cherrypy.request.remote.ip)):
+			if(self.checkIfRateLimited(input['sender'])):
 				return '11: Blacklisted or Rate Limited'	
 			profileData = self.getClientProfile(input['profile_username'])
 			outputDict = {'fullname':profileData[2],'position':profileData[3],'description':profileData[4], 'location':profileData[5], 'picture':profileData[6], 'encoding':profileData[7], 'encryption':profileData[8], 'decryptionKey': profileData[9]}
@@ -525,7 +537,7 @@ class MainApp(object):
 			if(not('sender' in input_data))or(not('destination' in input_data))or(not('file' in input_data))or(not('stamp' in input_data)or(not('filename' in input_data))or(not('content_type' in input_data))):
 				return '1: Missing Compulsory Field' ####WHAT  IF ONE OF THESE FIELDS IS EMPTY?
 			
-			if(self.checkIfRateLimited(input_data['sender'],cherrypy.request.remote.ip)):
+			if(self.checkIfRateLimited(input_data['sender'])):
 				return '11: Blacklisted or Rate Limited'
 			
 			if('encryption' in input_data):
@@ -564,7 +576,7 @@ class MainApp(object):
 	@cherrypy.expose
 	def sendFile(self, sender=None, destination=None, outFile=None,stamp = None,encryption=0, hashing = 0, hashedFile = None, decryptionKey=None):
 		try:	
-			if(self.checkIfRateLimited(username,cherrypy.request.remote.ip)):
+			if(self.checkIfRateLimited(username)):
 				return '11: Blacklisted or Rate Limited'
 			destinationUserData = self.getUserData(destination)
 			ip = destinationUserData[2]
@@ -581,9 +593,22 @@ class MainApp(object):
 			output_dict = {'sender':sender,'destination':destination,'file':encoded, 'stamp':stamp, 'filename':fileName,'content_type':content_type, 'encryption':encryption, 'hashing':hashing, 'hash': hashedFile}#, 'decryptionKey':decryptionKey}
 			data = json.dumps(output_dict) #data is a JSON object
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveFile' , data, {'Content-Type':'application/json'})
-			response = urllib2.urlopen(request,timeout=5)
-			sendResponse = response.read()
-			print ('file send response: '+sendResponse)
+			sendResponse = '  '
+			fileSentOffline = False
+			try:
+			
+				response = urllib2.urlopen(request,timeout=5)
+				sendResponse = response.read()
+				print ('file send response: '+sendResponse)
+			except:
+				#send message offline
+				#message = 'Msg Sent Offline: ' + message
+				#output_dict = {'sender':sender,'destination':destination,'message':message, 'stamp':stamp, 'markdown':int(markDown), 'encryption':encryption, 'hashing':hashing, 'hash': hashedMessage, 'decryptionKey':decryptionKey}
+				#data = json.dumps(output_dict) #data is a JSON object
+				#self.sendOfflineMessage(data)
+				thread.start_new_thread(self.sendOfflineFile, (data, cherrypy.session['username'], cherrypy.session['hashedPassword']))
+				fileSentOffline = True
+				
 			if 'image/' in input_data['content_type']:
 				fileMessage = '<img src="receivedFiles/'+fileName+'" alt= Picture 380x320 height="320" width="380">'	
 			elif 'video/' in input_data['content_type']:
@@ -595,7 +620,7 @@ class MainApp(object):
 			
 			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], fileMessage, output_dict['stamp'], '0','true', fileName, content_type)
 			
-			if (str(sendResponse[0]) == '0')or(str(sendResponse[1]) == '0'):
+			if (str(sendResponse[0]) == '0')or(str(sendResponse[1]) == '0')or(fileSentOffline == True):
 				
 				saveFile = open('public/receivedFiles/'+fileName,'wb')
 				saveFile.write((output_dict['file']).decode('base64'))
@@ -618,33 +643,38 @@ class MainApp(object):
 	@cherrypy.expose
 	def signin(self, username=None, password=None):
 		"""Check their name and password and send them either to the main page, or back to the 	main login screen."""
-		if(self.checkIfRateLimited(username,cherrypy.request.remote.ip)):
-			return '11: Blacklisted or Rate Limited'
+		try:	
+			if(self.checkIfRateLimited(username)):
+				return '11: Blacklisted or Rate Limited'
+		except:
+			pass
 		
 		hashOfPasswordPlusSalt = None
 		if(not(password==None)):
 			passwordPlusSalt = password + SALT
 			hashOfPasswordPlusSalt = hashlib.sha256(passwordPlusSalt).hexdigest()
-		error = self.authoriseUserLogin(username,hashOfPasswordPlusSalt)
+		error = self.authoriseUserLogin(username,hashOfPasswordPlusSalt, True)
 		if (error == 0):
 			cherrypy.session['username'] = username;
 			cherrypy.session['hashedPassword'] = hashOfPasswordPlusSalt;
 			cherrypy.session['userStatus'] = 'Online'
 			self.currentUser = cherrypy.session['username']
 			self.currentUserHashedPassword = cherrypy.session['hashedPassword']
-			self.openUsersListPage()############################################################################################################################
+			#self.openUsersListPage()############################################################################################################################
 			
 			self.serverReportThreading(cherrypy.session['username'],cherrypy.session['hashedPassword'])
 			raise cherrypy.HTTPRedirect('/openUsersListPage')
 		else:
 			cherrypy.session['loginStatusText'] = "Username or Password is Incorrect"
 			raise cherrypy.HTTPRedirect('/login')
+		
+			
 
 	@cherrypy.expose
 	def signout(self,serverShutDown = False):
 		"""Logs the current user out, expires their session"""
-		if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
-			return '11: Blacklisted or Rate Limited'
+		#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
+			#return '11: Blacklisted or Rate Limited'
 		redirectToLoginPage = False
 		username = None
 		try:			
@@ -690,9 +720,12 @@ class MainApp(object):
 	def serverReportTimer(self,username,hashedPassword):
 		beginTime=time.time()
 		loop = True
-		
+		try:
+			self.requestOfflineMessages(username,hashedPassword)
+		except:
+			print 'offline msg request failed'
 		while (loop == True):
-			time.sleep(30.0-((time.time()-beginTime)%30.0))#how many secs there are to the nearest 30 sec block of time, 30 minus that to figure out how long you have to sleep, the reason I do this is to account for variable execution times for self.authoriseUserLogin()
+			#time.sleep(30.0-((time.time()-beginTime)%30.0))#how many secs there are to the nearest 30 sec block of time, 30 minus that to figure out how long you have to sleep, the reason I do this is to account for variable execution times for self.authoriseUserLogin()
 			#print (self.checkIfStillLoggedIn(username,hashedPassword))
 			if(self.checkIfStillLoggedIn(username,hashedPassword)):	
 				try:
@@ -700,6 +733,7 @@ class MainApp(object):
 					self.authoriseUserLogin(username,hashedPassword)
 				except:
 					pass	
+				time.sleep(30.0-((time.time()-beginTime)%30.0))#how many secs there are to the nearest 30 sec block of time, 30 minus that to figure out how long you have to sleep, the reason I do this is to account for variable execution times for self.authoriseUserLogin()
 			else:			
 				loop = False
 		print 'server login report thread exited'
@@ -713,10 +747,9 @@ class MainApp(object):
 			onlineUsersResponse = urllib2.urlopen(onlineUsersRequest)
 			onlineUsersData = onlineUsersResponse.read()
 			onlineUsersData = json.loads(onlineUsersData)
-			#print onlineUsersData
+			
 			for value in onlineUsersData.itervalues():
-				#print value['username']
-				#print username
+				
 				if(value['username']==username):
 					return True
 			
@@ -724,7 +757,7 @@ class MainApp(object):
 			pass
 		return False
 	
-	def authoriseUserLogin(self, username=None, hashedPassword=None):
+	def authoriseUserLogin(self, username=None, hashedPassword=None, firstLogin = False):
 		try:
 			ip = self.getIP()
 			location = self.getLocation(ip)
@@ -745,7 +778,7 @@ class MainApp(object):
 				onlineUsersResponse = urllib2.urlopen(onlineUsersRequest,timeout=5)
 				onlineUsersData = onlineUsersResponse.read()
 				
-				self.updateAllUsersTable(onlineUsersData)
+				self.updateAllUsersTable(onlineUsersData, firstLogin)
 				
 			
 			
@@ -770,7 +803,7 @@ class MainApp(object):
 				return '1: Missing Compulsory Field'
 			requestor = input['requestor']	
 			
-			if(self.checkIfRateLimited(input['requestor'],cherrypy.request.remote.ip)):
+			if(self.checkIfRateLimited(input['requestor'])):
 				return '11: Blacklisted or Rate Limited'
 			
 			messagesForRequestor = self.getMessagesForOneUser(requestor)
@@ -789,8 +822,8 @@ class MainApp(object):
 	@cherrypy.expose
 	def openSetUserStatusPage(self):
 		try:
-			if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
-				return '11: Blacklisted or Rate Limited'
+			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
+				#return '11: Blacklisted or Rate Limited'
 			
 			username = cherrypy.session['username']
 			Page = open('editUserStatus.html')
@@ -802,18 +835,24 @@ class MainApp(object):
 	@cherrypy.expose
 	def setUserStatus(self,userStatus = 'Online'):
 		try:
-			if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
-				return '11: Blacklisted or Rate Limited'
-		
+			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
+				#return '11: Blacklisted or Rate Limited'
+			print 'test'
 			cherrypy.session['userStatus'] = userStatus
+			print 'test'
 			conn = sqlite3.connect(DB_USER_DATA)
+			print 'test2'
 			c = conn.cursor()
+			print 'test3'
 			c.execute('''UPDATE AllUsers SET status = ? WHERE username = ?''',(userStatus, cherrypy.session['username']))
+			print 'test4'
 			conn.commit() # commit actions to the database
+			print 'test5'
 			conn.close()	
 			
-		except:
-			pass
+		except Exception as e:
+			print e
+			print 'error setting user status'
 		raise cherrypy.HTTPRedirect('/openUsersListPage')
 
 		
@@ -822,8 +861,8 @@ class MainApp(object):
 	@cherrypy.tools.json_in()
 	def getStatus(self):	
 		try:
-			if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
-				return '11: Blacklisted or Rate Limited'
+			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
+				#return '11: Blacklisted or Rate Limited'
 			
 			input = cherrypy.request.json
 			if(not('profile_username' in input)):				
@@ -836,22 +875,22 @@ class MainApp(object):
 			return '3: Client Currently Unavailable'
 	
 	@cherrypy.expose
-	def requestOfflineMessages(self):######################################################################################
+	def requestOfflineMessages(self,username,hashedPassword):######################################################################################
 		try:
-			if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
-				return '11: Blacklisted or Rate Limited'
+			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
+				#return '11: Blacklisted or Rate Limited'
 			
-			username = cherrypy.session['username']
-			hashedPassword = cherrypy.session['hashedPassword']
-			
+			#username = cherrypy.session['username']
+			#hashedPassword = cherrypy.session['hashedPassword']
+			print 'offlinemsgtest1'
 			onlineUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/getList?username='+username+'&password='+hashedPassword+'&enc=0&json=1')
 			onlineUsersResponse = urllib2.urlopen(onlineUsersRequest,timeout=5)
 			onlineUsersData = onlineUsersResponse.read()
 			onlineUsersData = json.loads(onlineUsersData)
-			
+			print 'offlinemsgtest2'
 			output_dict = {'requestor':username}
 			data = json.dumps(output_dict) #data is a JSON object
-			
+			print 'offlinemsgtest3'
 			for value in onlineUsersData.itervalues():
 				try:
 					userToRequest = value['username']
@@ -886,7 +925,7 @@ class MainApp(object):
 			if(not('sender' in input_data))or(not('destination' in input_data))or(not('message' in input_data))or(not('stamp' in input_data)):
 				return '1: Missing Compulsory Field' ####WHAT  IF ONE OF THESE FIELDS IS EMPTY?
 			
-			if(self.checkIfRateLimited(input_data['sender'],cherrypy.request.remote.ip)):
+			if(self.checkIfRateLimited(input_data['sender'])):
 				return '11: Blacklisted or Rate Limited'
 			
 			if('encryption' in input_data):
@@ -921,7 +960,7 @@ class MainApp(object):
 	def sendMessage(self, sender=None, destination=None, message='Default Message',markDown='0',stamp=None,encryption=0, hashing = 0, hashedMessage = None, decryptionKey=None):	
 		data = None
 		try:	
-			if(self.checkIfRateLimited(sender,cherrypy.request.remote.ip)):
+			if(self.checkIfRateLimited(sender)):
 				return '11: Blacklisted or Rate Limited'
 			
 			if ((message == None)or(message == '')):
@@ -937,14 +976,23 @@ class MainApp(object):
 			data = json.dumps(output_dict) #data is a JSON object
 			
 			request = urllib2.Request('http://'+ ip + ':' + port + '/receiveMessage', data, {'Content-Type':'application/json'})
-			response = urllib2.urlopen(request,timeout=5)
-			#print 'sendMessageTest'
+			try:
+				response = urllib2.urlopen(request,timeout=5)
+				print response.read()
+			except:
+				#send message offline
+				message = 'Msg Sent Offline: ' + message
+				output_dict = {'sender':sender,'destination':destination,'message':message, 'stamp':stamp, 'markdown':int(markDown), 'encryption':encryption, 'hashing':hashing, 'hash': hashedMessage, 'decryptionKey':decryptionKey}
+				data = json.dumps(output_dict) #data is a JSON object
+				#self.sendOfflineMessage(data)
+				thread.start_new_thread(self.sendOfflineMessage, (data, cherrypy.session['username'], cherrypy.session['hashedPassword']))
+			
 			if (str(markDown)=='1'):
 				message = markdown.markdown(output_dict['message'])
 			
 			
 			self.insertIntoMessagesTable(output_dict['sender'], output_dict['destination'], message, output_dict['stamp'], int(markDown),'false', None,None)
-			print response.read()
+			
 		except Exception as e: 
 			print e
 			print 'send message error'
@@ -953,8 +1001,60 @@ class MainApp(object):
 		#redirect back to messaging page
 		raise cherrypy.HTTPRedirect('/openMessagingPage?destination='+destination)	
 	
-	
-	#WEB_ROOT = os.path.join(os.getcwd(), 'public') 
+	def sendOfflineMessage(self,data,username,hashedPassword):
+		try:	
+			print 'Sending Message Offline'
+			
+			onlineUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/getList?username='+username+'&password='+hashedPassword+'&enc=0&json=1')
+			onlineUsersResponse = urllib2.urlopen(onlineUsersRequest,timeout=5)
+			onlineUsersRead = onlineUsersResponse.read()
+			onlineUsersData = json.loads(onlineUsersRead)
+						
+			for value in onlineUsersData.itervalues():
+					
+				try:				
+					
+					ip = value['ip']
+					port = value['port']
+					
+					request = urllib2.Request('http://'+ ip + ':' + port + '/receiveMessage' , data, {'Content-Type':'application/json'})				
+					response = urllib2.urlopen(request,timeout=2).read()				
+					
+				except:
+					pass
+			print 'Offline Message sent successfully'	
+		except:
+			pass			
+		thread.exit()	
+		
+	def sendOfflineFile(self,data,username,hashedPassword):
+		try:	
+			print 'Sending File Offline'
+			
+			onlineUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/getList?username='+username+'&password='+hashedPassword+'&enc=0&json=1')
+			onlineUsersResponse = urllib2.urlopen(onlineUsersRequest,timeout=5)
+			onlineUsersRead = onlineUsersResponse.read()
+			onlineUsersData = json.loads(onlineUsersRead)
+		
+			
+			
+			for value in onlineUsersData.itervalues():
+					
+				try:				
+					
+					ip = value['ip']
+					port = value['port']
+					
+					request = urllib2.Request('http://'+ ip + ':' + port + '/receiveFile' , data, {'Content-Type':'application/json'})				
+					response = urllib2.urlopen(request,timeout=2).read()				
+					
+				except:
+					pass
+			print 'Offline File sent successfully'	
+		except:
+			pass			
+		thread.exit()		
+	 
 
 	cherrypy.config.update({'error_page.404': default,'server.socket_host': '127.0.0.1','server.socket_port': 10001,'engine.autoreload.on': True,'tools.sessions.on': True,'tools.encode.on': True,'tools.encode.encoding': 'utf-8','tools.staticdir.on' : True,	'tools.staticdir.dir' : os.path.join(os.getcwd(), 'public'),'tools.staticdir.index' : 'login.html'})
 	
