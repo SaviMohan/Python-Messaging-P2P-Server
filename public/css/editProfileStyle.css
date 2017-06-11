@@ -44,7 +44,7 @@ body {
   display: flex;
   overflow: hidden;
 }
-input[type=text] {
+input[type=text] {/*Styling for input text fields*/
   width: 100%;
   padding: 12px 20px;
   margin: 8px 0;
@@ -52,7 +52,7 @@ input[type=text] {
   border: 2px solid red;
   border-radius: 4px;
 }
- input[type=submit], input[type=reset] {
+ input[type=submit], input[type=reset] {/*Styling for submit button*/
   background-color: #4CAF50;
    width: 98%;
   border: none;
@@ -65,7 +65,7 @@ input[type=text] {
   margin-right: 0%;
 }
 
-form { 
+form { /*form has set width*/
 margin: 0 auto; 
 width:800px;
 }

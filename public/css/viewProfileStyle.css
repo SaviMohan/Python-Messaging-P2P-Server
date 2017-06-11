@@ -1,9 +1,11 @@
+/*Styling for view profile page*/
+
 #outer {
   width: 100%;
   text-align: center;
 }
 .inner {
-  display: inline-block;
+  display: inline-block;/*Styling for menu buttons to be stacked side-side*/
 }
 .msgBtn {
   font-size: 30px;
@@ -12,12 +14,12 @@
   color: black;
   border: 2px solid #4CAF50; /* Green */
 }
-.msgBtn:hover {
+.msgBtn:hover {/*button changes color when you hover over it*/
   background-color: #4CAF50; /* Green */
   color: white;
 }
 
-body {
+body { /*page background colour*/
   background-color: #35465c;
 }
 
@@ -26,7 +28,7 @@ h1 {
 	
 }
 
-.ui {
+.ui {/*Styling for ui*/
   margin: 10px auto;
   width: 1300px;
   height: 900px;

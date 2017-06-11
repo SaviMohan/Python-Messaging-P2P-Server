@@ -1,3 +1,4 @@
+/*Stylesheet for messaging page*/
 @import url(https://fonts.googleapis.com/css?family=Open+Sans:700,600,800,400);
 @import url(https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css);
 * {
@@ -6,7 +7,7 @@
   padding: 0;
 }
 
-input[type=text] {
+input[type=text] {/*Styling for input text field*/
   width: 85%;
   padding: 12px 20px;
   margin: 8px 0;
@@ -14,7 +15,7 @@ input[type=text] {
   border: 2px solid red;
   border-radius: 4px;
 }
-input[type=submit], input[type=reset] {
+input[type=submit], input[type=reset] {/*Styling for form submit buttons*/
   background-color: #4CAF50;
   border: none;
   color: white;
@@ -31,7 +32,7 @@ input[type=submit], input[type=reset] {
     width:100%;
     text-align: center;
 }
-.inner
+.inner/*Styling for menu buttons so that they are inline horizontally*/
 {
     display: inline-block;    
     
@@ -43,21 +44,21 @@ input[type=submit], input[type=reset] {
   color: black;
   border: 2px solid #4CAF50; /* Green */
 }
-.msgBtn:hover {
+.msgBtn:hover {/*button changes colour when you hover over it*/
     background-color: #4CAF50; /* Green */
     color: white;
 }
 
-body {
+body {/*page colour*/
     background-color: #35465c;
 }
 
-.ui .chat .messages {
+.ui .chat .messages {/*chatbox will scroll if too many messages to fit*/
   overflow-y : auto
 }
 
 
-.ui {
+.ui {/*Styling for ui*/
   margin: 10px auto;
   width: 1350px;
   height: 900px;
@@ -74,12 +75,12 @@ body {
   overflow: hidden;
 }
 
-.ui .chat {
+.ui .chat {/*Styling for chat div*/
   width: 100%;
   height: 100%;
   background: #f1f5f8;
 }
-.ui .chat .info {
+.ui .chat .info { /*Styling for top pane of chat*/
   display: -webkit-inline-box;
   display: -ms-inline-flexbox;
   display: inline-flex;
@@ -101,17 +102,17 @@ body {
 
 
 
-.ui .top {
+.ui .top {/*Styling for size of top pane*/
   height: 70px;
 }
-.ui .messages {
+.ui .messages { /*Styling for messages ul*/
   height: calc(100% - 70px - 150px);
   list-style: none;
   border: 2px solid #fff;
   border-left: none;
   border-right: none;
 }
-.ui .messages li {
+.ui .messages li {/*Styling for message chat bubbles*/
   margin: 10px;
   -webkit-transition: all .5s;
   transition: all .5s;
@@ -136,7 +137,7 @@ body {
   border-radius: 50%;
   top: 6px;
 }
-.ui .messages li .time {
+.ui .messages li .time {/*Styling for time stamp display for each message*/
   color: #b7bccf;
 }
 .ui .messages li .message {
@@ -160,7 +161,7 @@ body {
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
 }
-.ui .messages li.friend .name {
+.ui .messages li.friend .name {/*Styling for messages from destination user*/
   margin-left: 20px;
 }
 .ui .messages li.friend .name:after {
@@ -176,7 +177,7 @@ body {
   left: 16px;
   border-bottom-color: #62bf6e;
 }
-.ui .messages li.i .head {
+.ui .messages li.i .head {/*Styling for messages sent from logged in client*/
   text-align: right;
 }
 .ui .messages li.i .name {
@@ -195,7 +196,7 @@ body {
   right: 16px;
   border-bottom-color: #7bc4ef;
 }
-.ui .write-form {
+.ui .write-form {/*Styling for write-form div*/
   height: 150px;
 }
 .ui .write-form textarea {

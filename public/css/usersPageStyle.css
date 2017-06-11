@@ -1,9 +1,11 @@
+/*Stylesheet for user list page*/
+
 #outer {
   width: 100%;
   text-align: center;
 }
 .inner {
-  display: inline-block;
+  display: inline-block;/*Menu button will be displayed in Line*/
 }
 
 h1 {
@@ -17,7 +19,7 @@ h1 {
   color: black;
   border: 2px solid #4CAF50; /* Green */
 }
-.msgBtn:hover {
+.msgBtn:hover {/*Button changes colour when you hover over it*/
   background-color: #4CAF50; /* Green */
   color: white;
 }
@@ -50,11 +52,11 @@ h1 {
   color: white;
 }
 
-body {
+body {/*Page background colour*/
   background-color: #35465c;
 }
 
-.ui {
+.ui { /*Styling for ui*/
   margin: 10px auto;
   width: 1300px;
   height: 900px;
@@ -64,7 +66,7 @@ body {
   
   overflow-y: auto;
 }
-.ui .userList {
+.ui .userList { /*userlist will scroll if too many users to fit*/
   overflow-y: auto;
 }
 
