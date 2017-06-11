@@ -2,19 +2,15 @@
 <html >
 <head>
   <meta charset="UTF-8">
-  <title>Messaging</title>
+  <title>Messaging</title>  <!-- The html page for displaying the message communications between any 2 users --> 
   
-  
-  
-      <link rel="stylesheet" href="css/messagingStyle.css">
-
+      <link rel="stylesheet" href="css/messagingStyle.css"> <!-- Stylesheet for this html page. -->
   
 </head>
 
-<body>
-  
+<body>  
 
-<div id="outer">
+<div id="outer"> <!-- This div contains all the buttons that appear on the top 'menu'. -->
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/openUsersListPage'" >View Users</button></div>
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewProfilePage'">View My Profile</button></div>
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/editProfile'">Edit My Profile</button></div>
@@ -27,17 +23,15 @@
   <div class="chat">
     <div class="top">
       
-      <div class="info">
-        
+      <div class="info"> <!-- This div contains the user info to be displayed on the top pane of the chat -->       
        
-        <pre class="name">{userDetails:}</pre>
-    
+        <pre class="name">{userDetails:}</pre>    
         
       </div>
       
     </div>
     <ul class="messages">
-      {userMessages:}
+      {userMessages:} <!-- The dynamically generated html code from the python to display the user messages goes here. -->
 	  
     </ul>
     <div class="write-form">
@@ -46,17 +40,12 @@
 				<input name = "sender" value="{senderUsername:}" type="hidden">
 				
 				<input type="text" name="message"/>
-				
-				
-
 
 				<input type="checkbox" name="markDown" value="1" id="checkBox1"><label for="checkBox1"> Tick for Markdown</label>
-
-
 				
 			  <input type="submit" value="Send Message"/>
 		  </form>
-      <form accept-charset="utf-8" action = "/sendFile" method="post" enctype="multipart/form-data" style="float:left;">
+      <form accept-charset="utf-8" action = "/sendFile" method="post" enctype="multipart/form-data" style="float:left;"><!-- Form for uploading and sending a file. -->
         <input type = "file" name = "outFile"/>
         <input name = "destination" value="{receiverUsername:}" type="hidden">
 		<input name = "sender" value="{senderUsername:}" type="hidden">

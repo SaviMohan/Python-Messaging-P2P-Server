@@ -2,29 +2,26 @@
 <html >
 <head>
   <meta charset="UTF-8">
-  <title>Edit Profile</title>
-  
-  
+  <title>Edit Profile</title> <!-- The html page for displaying the form with which a user can update their profile page -->  
   
       <link rel="stylesheet" href="css/editProfileStyle.css">
-
   
 </head>
 
 <body>
-  <div id="outer">
-  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/openUsersListPage'" >View Users</button></div>
-  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewProfilePage'">View My Profile</button></div>
-  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/editProfile'">Edit My Profile</button></div>
-  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/signout'">Log Out</button></div>
-  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/openSetUserStatusPage'">Set User Status</button></div>
-</div>
+	<div id="outer"> <!-- This div contains all the buttons that appear on the top 'menu'. -->
+	  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/openUsersListPage'" >View Users</button></div>
+	  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewProfilePage'">View My Profile</button></div>
+	  <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/editProfile'">Edit My Profile</button></div>
+	  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/signout'">Log Out</button></div>
+	  <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/openSetUserStatusPage'">Set User Status</button></div>
+	</div>
 <h1 style="text-align:center">EDIT MY PROFILE</h1>
 <div class="ui">
 
 
 
-<form action="/updateClientProfileDetails" method="post" enctype="multipart/form-data">
+<form action="/updateClientProfileDetails" method="post" enctype="multipart/form-data"> <!-- form that the user uses to enter their profile credentials. -->
 			Full Name: <input type="text" name="fullname"/><br/>
 			Position: <input type="text" name="position"/><br/>
 			Description: <input type="text" name="description"/><br/>

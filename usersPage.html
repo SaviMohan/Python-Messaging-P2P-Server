@@ -2,19 +2,12 @@
 <html >
 <head>
   <meta charset="UTF-8">
-  <title>User List</title>
-  
-  
-		<!-- You will not be able to see this text. -->
-
-
-      <link rel="stylesheet" href="css/usersPageStyle.css">
-
-  
+  <title>User List</title><!-- The html page for displaying the list of Users. -->		
+      <link rel="stylesheet" href="css/usersPageStyle.css"> <!-- Stylesheet for this html page. -->  
 </head>
 
 <body>
-  <div id="outer">
+  <div id="outer"> <!-- This div contains all the buttons that appear on the top 'menu'. -->
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/openUsersListPage'" >View Users</button></div>
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewProfilePage'">View My Profile</button></div>
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/editProfile'">Edit My Profile</button></div>
@@ -22,19 +15,13 @@
   <div class="inner"><button type="submit" class="msgBtn"  onclick="window.location.href='/openSetUserStatusPage'">Set User Status</button></div>
 </div>
 <h1 style="text-align:center">Welcome {username:} User Status: {userstatus:}<br>COMPSYS 302 CHAT USER LIST- Click on a User to Message</h1>
-<div class="ui">
+<div class="ui">  
   
-  
-  <div class="userList">
-	{userList:}
-    
-    
-    
-    
+  <div class="userList"><!-- The dynamically generated html code from the python to display the user list goes here. -->
+	{userList:}    
    </div> 
   
-</div>
-  
+</div>  
   
 </body>
 </html>

@@ -287,6 +287,11 @@ class MainApp(object):
 	def updateAllUsersTable(self, onlineUsersData, firstLogin = False):
 		onlineUsersData = json.loads(onlineUsersData)
 		
+		serverUsersRequest = urllib2.Request('http://cs302.pythonanywhere.com/listUsers')
+		serverUsersResponse = urllib2.urlopen(serverUsersRequest,timeout=10)
+		serverUsersData = serverUsersResponse.read()
+		serversUsersList = serverUsersData.split(',')
+		
 		#conn = sqlite3.connect(DB_USER_DATA)
 		#c = conn.cursor()
 		#c.execute("UPDATE AllUsers SET status = 'Logged Off'")
@@ -302,7 +307,11 @@ class MainApp(object):
 					request = urllib2.Request('http://'+ ip + ':' + port + '/getStatus' , data, {'Content-Type':'application/json'})				
 					response = urllib2.urlopen(request,timeout=1).read()				
 					responseDict = json.loads(response)				
-					status = str(responseDict['status'])				
+					status = str(responseDict['status'])
+					if(status.lower()=='online')or(status.lower()=='offline')or(status.lower()=='away')or(status.lower()=='idle')or(status.lower()=='do not disturb'):
+						pass
+					else:
+						status = 'Online'
 					print ('requesting user status for '+value['username'])
 				except:
 					status = 'Online'
@@ -313,6 +322,8 @@ class MainApp(object):
 			c = conn.cursor()
 			try:
 				c.execute('''UPDATE AllUsers SET ip = ? , location = ?, lastLogin = ?, port = ?, status = ? WHERE username = ?''', (value['ip'], value['location'], value['lastLogin'], value['port'], status, value['username']))
+				if value['username'] in serversUsersList: 
+					serversUsersList.remove(value['username'])
 			except:
 				pass
 			
@@ -323,9 +334,13 @@ class MainApp(object):
 			
 			conn.commit() # commit actions to the database
 			conn.close()	
-				
-		#conn.commit() # commit actions to the database
-		#conn.close()
+		
+		for user in serversUsersList:
+			conn = sqlite3.connect(DB_USER_DATA)
+			c = conn.cursor()
+			c.execute('''UPDATE AllUsers SET status = 'Offline' WHERE username = ?''',(user,))
+			conn.commit() # commit actions to the database
+			conn.close()
 		
 	def getAllUsersData(self):
 		conn = sqlite3.connect(DB_USER_DATA)
@@ -347,6 +362,7 @@ class MainApp(object):
 	createRequestRateTable()
 	
 	def __init__(self):
+		"""Init function that sets up the Main User variables when this class is initialised"""
 		cherrypy.engine.subscribe('stop',self.serverExitLogOff)
 		self.currentUser = None
 		self.currentUserHashedPassword = None
@@ -362,7 +378,7 @@ class MainApp(object):
 	# PAGES (which return HTML that can be viewed in browser)
 	@cherrypy.expose
 	def index(self):
-		
+		"""Redirects to the User list page or to the login page if there is no current user """
 		
 		try:
 			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
@@ -378,12 +394,14 @@ class MainApp(object):
 	
 	@cherrypy.expose
 	def listAPI(self):
+		"""Returns the APIs supported , as well as the encryption and hashing standards """
 		#if(self.checkIfRateLimited(username,cherrypy.request.remote.ip)):
 			#return '11: Blacklisted or Rate Limited'		
 		return '/receiveMessage [sender] [destination] [message] [stamp] [markdown(opt)] [markdown(opt)] [encoding(opt)] [encryption(opt)] [hashing(opt)] [hash(opt)] [decryptionKey(opt)] Encoding <>  Encryption <>  Hashing <>'
         
 	@cherrypy.expose
 	def login(self):
+		"""Opens the login.html page"""
 		try:
 			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
 				#return '11: Blacklisted or Rate Limited'
@@ -396,6 +414,7 @@ class MainApp(object):
 	
 	@cherrypy.expose
 	def openMessagingPage(self,destination=None):
+		"""Opens the messaging.html page and inserts into it the messages between the logged in user and the destination user """
 		try:
 			#if(self.checkIfRateLimited(None,cherrypy.request.remote.ip)):
 				#return '11: Blacklisted or Rate Limited'
@@ -405,7 +424,7 @@ class MainApp(object):
 			messages = self.getMessages(client,destination)
 			messages.reverse()
 			if (not(destinationUserData[4]==None)):
-				lastLogin = (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(destinationUserData[4]))))
+				lastLogin = (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(destinationUserData[4]))))#convert epoch time to readable format
 			else:
 				lastLogin = ''
 			destinationUserDetails = destination+'	'+'Last Login:'+lastLogin+' '+destinationUserData[6]
@@ -541,12 +560,14 @@ class MainApp(object):
 				return '11: Blacklisted or Rate Limited'
 			
 			if('encryption' in input_data):
-				if (not(str(input_data['encryption']) == '0')):
+				if (input_data['encryption'] == None):
+					pass
+				elif (not(str(input_data['encryption']) == '0')):
 					return '9: Encryption Standard Not Supported' 
 			print ('file sent from: '+input_data['sender'])
 			base64Length = len(input_data['file'])
 			fileLength = base64Length * 0.75
-			#print fileLength
+			
 			if (fileLength>5242880):
 				return ('4: File exceeds 5MB')
 						
@@ -929,14 +950,18 @@ class MainApp(object):
 				return '11: Blacklisted or Rate Limited'
 			
 			if('encryption' in input_data):
-				if (not(str(input_data['encryption']) == '0')):
+				if (input_data['encryption'] == None):
+					pass
+				elif (not(str(input_data['encryption']) == '0')):
 					#encryption = input_data['encryption']
 				#else:
 					return '9: Encryption Standard Not Supported' 
 			
 			markDown='0'
 			if ('markdown' in input_data):
-				if ((str(input_data['markdown'])) == '1'):
+				if (input_data['markdown'] == None):
+					message = input_data['message'] 
+				elif ((str(input_data['markdown'])) == '1'):
 					#print 'receiveMessageTest1'
 					message = markdown.markdown(input_data['message'])
 					markDown = '1'

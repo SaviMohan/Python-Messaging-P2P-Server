@@ -1,8 +1,10 @@
+/*Stylesheet for the edit profile page*/
+
 #outer {
   width: 100%;
   text-align: center;
 }
-.inner {
+.inner { /*Menu buttons on top of page will stack side-by-side*/
   display: inline-block;
 }
 .msgBtn {
@@ -12,7 +14,7 @@
   color: black;
   border: 2px solid #4CAF50; /* Green */
 }
-.msgBtn:hover {
+.msgBtn:hover { /*Make the button change colour when cursor hovers over it*/
   background-color: #4CAF50; /* Green */
   color: white;
 }
@@ -23,10 +25,10 @@ h1 {
 }
 
 body {
-  background-color: #35465c;
+  background-color: #35465c; /*Page background colour*/
 }
 
-.ui {
+.ui {/*Styling for the ui div*/
   margin: 10px auto;
   width: 1300px;
   height: 900px;

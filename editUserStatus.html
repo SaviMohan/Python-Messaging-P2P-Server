@@ -2,17 +2,12 @@
 <html >
 <head>
   <meta charset="UTF-8">
-  <title>Edit User Status</title>
-  
-  
-  
-      <link rel="stylesheet" href="css/editUserStatusStyle.css">
-
-  
+  <title>Edit User Status</title> <!-- The html page for allowing a logged in user to edit their own online status -->   
+      <link rel="stylesheet" href="css/editUserStatusStyle.css">  <!-- Stylesheet for this html page. -->  
 </head>
 
 <body>
-  <div id="outer">
+  <div id="outer"> <!-- This div contains all the buttons that appear on the top 'menu'. -->
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/openUsersListPage'" >View Users</button></div>
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/viewProfilePage'">View My Profile</button></div>
   <div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/editProfile'">Edit My Profile</button></div>
@@ -22,7 +17,7 @@
 <h1 style="text-align:center">SELECT YOUR USER STATUS</h1>
 
 <div class="ui">
-  <div id="outer">
+  <div id="outer"> <!-- Clicking on the below buttons will allow the user to set their User Status. -->
 	<div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/setUserStatus?userStatus=Online'" >Online</button></div>
 	<div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/setUserStatus?userStatus=Offline'">Offline</button></div>
 	<div class="inner"><button type="submit" class="msgBtn" onclick="window.location.href='/setUserStatus?userStatus=Idle'">Idle</button></div>

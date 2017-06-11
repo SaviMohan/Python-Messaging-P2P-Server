@@ -1,5 +1,7 @@
+/*Stylesheet for login page*/
+
 body {
-  background-color: #35465c;
+  background-color: #35465c; /*Page background colour*/
 }
 
 h1{
@@ -10,7 +12,9 @@ h2 {
     color: white;
 	margin-left: 40%;
 }
-input[type=text] {
+
+
+input[type=text] { /*Styling for the username field*/
   width: 60%;
   padding: 12px 20px;
   margin: 8px 0;
@@ -19,7 +23,7 @@ input[type=text] {
   
   border-radius: 4px;
 }
-input[type=password] {
+input[type=password] {/*styling for the password field*/
   width: 60%;
   padding: 12px 20px;
   margin: 8px 0;
@@ -28,7 +32,7 @@ input[type=password] {
   
   border-radius: 4px;
 }
- input[type=submit], input[type=reset] {
+ input[type=submit], input[type=reset] {/*styling for the submit button*/
   background-color: #4CAF50;
    width: 35%;
   border: none;
@@ -38,10 +42,10 @@ input[type=password] {
   margin: 4px 2px;
   cursor: pointer;
   
-  margin-left: 30%;
+  margin-left: 30%; /*submit button will be positioned 30% of the way in from the left margin*/
 }
 
-form { 
+form { /*The form has a set width*/
 margin: 0 auto; 
 width:800px;
 }

@@ -1,6 +1,6 @@
 <html>
-    <head>
-		<link rel="stylesheet" href="css/loginStyle.css">
+    <head> <!-- The html page for displaying the login page. -->
+		<link rel="stylesheet" href="css/loginStyle.css"> <!-- Stylesheet for this html page. -->
 	</head>
     <body>
 	<div> 
@@ -9,7 +9,7 @@
 			</h2>
 		</div>	
 	<div> 
-        <form action="/signin" method="post" enctype="multipart/form-data">
+        <form action="/signin" method="post" enctype="multipart/form-data"> <!-- Form for entering login credentials -->
 			Username: <input type="text" name="username"/><br/>
 			Password: <input type="password" name="password"/>
 			<input type="submit" value="Login"/>
@@ -17,7 +17,7 @@
 	</div>	
 		<div> 
 			<h2>
-				{statusText:}
+				{statusText:} <!-- if the wrong login credentials are given, the python will reload the page and display a 'incorrect username/password' message here -->
 			</h2>
 		</div>	
 		
